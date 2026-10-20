@@ -1,0 +1,164 @@
+{
+  "id": "polls-surveys",
+  "name": "Polls & surveys",
+  "category": "general",
+  "summary": "Ask viewers a question on the TV and collect answers with the remote.",
+  "description": "A poll or survey layout where viewers answer with the remote control directly on the TV screen. Advertisers gather quick feedback and sentiment during the ad. This template is shown as design mock-ups only.",
+  "features": [
+    "Poll question",
+    "Remote-based answers",
+    "Two layout variants"
+  ],
+  "remoteHints": [],
+  "interactive": false,
+  "thumbnail": "mocks/variant1-01.jpg",
+  "host": null,
+  "examples": [],
+  "mocks": [
+    {
+      "src": "mocks/variant1-07.jpg",
+      "caption": "John Lewis & Partners — dark glass panel · Question with 4 answers, first answer focused"
+    },
+    {
+      "src": "mocks/variant1-08.jpg",
+      "caption": "John Lewis & Partners — dark glass panel · Question with 3 answers"
+    },
+    {
+      "src": "mocks/variant1-09.jpg",
+      "caption": "John Lewis & Partners — dark glass panel · Question with 2 answers"
+    },
+    {
+      "src": "mocks/variant1-10.jpg",
+      "caption": "John Lewis & Partners — dark glass panel · Question with 3 answers, alternative panel layout"
+    },
+    {
+      "src": "mocks/variant1-11.jpg",
+      "caption": "John Lewis & Partners — dark glass panel · Correct answer: QR code to claim a discount"
+    },
+    {
+      "src": "mocks/variant1-12.jpg",
+      "caption": "John Lewis & Partners — dark glass panel · Wrong answer: “Try again” button"
+    },
+    {
+      "src": "mocks/variant1-13.jpg",
+      "caption": "John Lewis & Partners — solid panel · Question with 4 answers, first answer focused"
+    },
+    {
+      "src": "mocks/variant1-14.jpg",
+      "caption": "John Lewis & Partners — solid panel · Question with 3 answers"
+    },
+    {
+      "src": "mocks/variant1-15.jpg",
+      "caption": "John Lewis & Partners — solid panel · Question with 2 answers"
+    },
+    {
+      "src": "mocks/variant1-16.jpg",
+      "caption": "John Lewis & Partners — solid panel · Question with 3 answers, alternative panel layout"
+    },
+    {
+      "src": "mocks/variant1-17.jpg",
+      "caption": "John Lewis & Partners — solid panel · Correct answer: QR code to claim a discount"
+    },
+    {
+      "src": "mocks/variant1-18.jpg",
+      "caption": "John Lewis & Partners — solid panel · Wrong answer: “Try again” button"
+    },
+    {
+      "src": "mocks/variant2-07.jpg",
+      "caption": "itvX — dark glass panel · Question with 4 answers, first answer focused"
+    },
+    {
+      "src": "mocks/variant2-08.jpg",
+      "caption": "itvX — dark glass panel · Question with 3 answers"
+    },
+    {
+      "src": "mocks/variant2-09.jpg",
+      "caption": "itvX — dark glass panel · Question with 2 answers"
+    },
+    {
+      "src": "mocks/variant2-10.jpg",
+      "caption": "itvX — dark glass panel · Question with 3 answers, alternative panel layout"
+    },
+    {
+      "src": "mocks/variant2-11.jpg",
+      "caption": "itvX — dark glass panel · Correct answer: QR code to claim a discount"
+    },
+    {
+      "src": "mocks/variant2-12.jpg",
+      "caption": "itvX — dark glass panel · Wrong answer: “Try again” button"
+    },
+    {
+      "src": "mocks/variant2-13.jpg",
+      "caption": "itvX — solid panel · Question with 4 answers, first answer focused"
+    },
+    {
+      "src": "mocks/variant2-14.jpg",
+      "caption": "itvX — solid panel · Question with 3 answers"
+    },
+    {
+      "src": "mocks/variant2-15.jpg",
+      "caption": "itvX — solid panel · Question with 2 answers"
+    },
+    {
+      "src": "mocks/variant2-16.jpg",
+      "caption": "itvX — solid panel · Question with 3 answers, alternative panel layout"
+    },
+    {
+      "src": "mocks/variant2-17.jpg",
+      "caption": "itvX — solid panel · Correct answer: QR code to claim a discount"
+    },
+    {
+      "src": "mocks/variant2-18.jpg",
+      "caption": "itvX — solid panel · Wrong answer: “Try again” button"
+    },
+    {
+      "src": "mocks/variant1-01.jpg",
+      "caption": "Template layout · Question with 4 answers, first answer focused"
+    },
+    {
+      "src": "mocks/variant1-02.jpg",
+      "caption": "Template layout · Question with 3 answers"
+    },
+    {
+      "src": "mocks/variant1-03.jpg",
+      "caption": "Template layout · Question with 2 answers"
+    },
+    {
+      "src": "mocks/variant1-04.jpg",
+      "caption": "Template layout · Question with 3 answers, alternative panel layout"
+    },
+    {
+      "src": "mocks/variant1-05.jpg",
+      "caption": "Template layout · Correct answer: QR code to claim a discount"
+    },
+    {
+      "src": "mocks/variant1-06.jpg",
+      "caption": "Template layout · Wrong answer: “Try again” button"
+    },
+    {
+      "src": "mocks/variant2-01.jpg",
+      "caption": "Template layout · Question with 4 answers, first answer focused"
+    },
+    {
+      "src": "mocks/variant2-02.jpg",
+      "caption": "Template layout · Question with 3 answers"
+    },
+    {
+      "src": "mocks/variant2-03.jpg",
+      "caption": "Template layout · Question with 2 answers"
+    },
+    {
+      "src": "mocks/variant2-04.jpg",
+      "caption": "Template layout · Question with 3 answers, alternative panel layout"
+    },
+    {
+      "src": "mocks/variant2-05.jpg",
+      "caption": "Template layout · Correct answer: QR code to claim a discount"
+    },
+    {
+      "src": "mocks/variant2-06.jpg",
+      "caption": "Template layout · Wrong answer: “Try again” button"
+    }
+  ],
+  "slots": []
+}

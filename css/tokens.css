@@ -1,0 +1,40 @@
+/* Design tokens mirrored from https://preview.samsungads.com/ (theme object
+   and styled-components in its JS bundle). Keep names aligned with the
+   source theme so new components can be matched against it. */
+
+@font-face { font-family: SamsungOne; src: url(../assets/fonts/SamsungOne-400v11.woff2) format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: SamsungOne; src: url(../assets/fonts/SamsungOne-700v11.woff2) format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: SamsungOne; src: url(../assets/fonts/SamsungOne-800v11.woff2) format("woff2"); font-weight: 800; font-style: normal; font-display: swap; }
+@font-face { font-family: SamsungSharpSans; src: url(../assets/fonts/SamsungSharpSans-500.woff2) format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: SamsungSharpSans; src: url(../assets/fonts/SamsungSharpSans-700.woff2) format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+
+:root {
+    --font-body: SamsungOne, "Trebuchet MS", sans-serif;
+    --font-head: SamsungSharpSans, "Trebuchet MS", sans-serif;
+
+    --black: #000000;
+    --white: #ffffff;
+    --gray: #cccccc;
+    --gray-light: #f2f2f2;
+    --gray-light-medium: #e8e8e8;
+    --gray-dark: #646464;
+    --blue: #1428a0;
+    --blue-light: #eceef7;
+    --red: #e81c11;
+    --red-light: #fad2cf;
+    --orange: #f36a25;
+    --orange-light: #fff0da;
+    --green: #469b00;
+    --green-light: #daebcc;
+    --pink: #d939b2;          /* TV focus highlight / remote pulse */
+
+    --header-height: 64px;
+    --footer-height: 154px;
+    --content-max: 1190px;
+
+    --radius-input: 8px;
+    --radius-panel: 16px;
+    --radius-tile: 24px;
+    --radius-pill: 24px;
+    --shadow-pop: 0 4px 12px 0 rgba(0, 0, 0, 0.25);
+}

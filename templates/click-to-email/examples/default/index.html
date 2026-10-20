@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, height=1080, initial-scale=1">
+<title>Special discount — Click to Email</title>
+<style>
+    /* catalogue patch: Google Fonts Figtree link removed (offline); SamsungOne served from the catalogue repo root (assets/fonts), path is relative to this file: templates/click-to-email/examples/default/ -> 4 levels up */
+    @font-face { font-family: 'SamsungOne'; font-weight: 400; font-style: normal; src: url("../../../../assets/fonts/SamsungOne-400v11.woff2") format("woff2"); }
+    @font-face { font-family: 'SamsungOne'; font-weight: 600 700; font-style: normal; src: url("../../../../assets/fonts/SamsungOne-700v11.woff2") format("woff2"); }
+    /* Fixed 1920x1080 canvas, scaled to the real screen by scaleStage(). */
+    html, body {
+        margin: 0; padding: 0; width: 100%; height: 100%;
+        background: #000; overflow: hidden;
+        -webkit-font-smoothing: antialiased;
+    }
+    a { color: #fff; } a:hover { color: #C8C8C8; }
+    #stage {
+        position: absolute; left: 0; top: 0;
+        width: 1920px; height: 1080px; overflow: hidden;
+        background: #646464; color: #fff;
+        transform-origin: top left;
+        --font-head: 'SamsungOne', 'Samsung SS Head', 'Samsung SS Body', 'Figtree', sans-serif; /* catalogue patch: SamsungOne first */
+        --font-body: 'SamsungOne', 'Samsung SS Body', 'Figtree', sans-serif;
+        --font-one: 'SamsungOne', 'Samsung SS Body', 'Figtree', sans-serif;
+    }
+
+    /* ===== Background (replace assets/background.jpg later) ===== */
+    #bg {
+        position: absolute; left: -10px; top: 0;
+        width: 1940px; height: 1091.25px;
+        object-fit: cover; display: block;
+        transform: matrix(-1, 0, 0, 1, 0, 0);
+    }
+
+    /* ===== Back button (top-right) ===== */
+    #backBtn {
+        position: absolute; left: 1808px; top: 40px;
+        width: 72px; height: 72px; box-sizing: border-box;
+        border-radius: 50%;
+        background: rgba(63, 63, 63, 0.8);
+        border: 2px solid rgba(130, 130, 130, 0.4);
+        box-shadow: 0 2px 2px rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+    }
+    #backBtn svg { position: absolute; left: 15px; top: 15px; width: 38px; height: 38px; display: block; }
+
+    /* ===== Click_To_Email card ===== */
+    #ctaCard {
+        position: absolute; left: 88px; top: 654px;
+        width: 389px; box-sizing: border-box; padding: 32px;
+        display: flex; flex-direction: column; gap: 16px;
+    }
+    .cta-title {
+        width: 325px; height: 129px;
+        display: flex; align-items: center; justify-content: center; text-align: center;
+        font: 700 40px/56px var(--font-body);
+        color: #fff;
+    }
+    .cta-group { display: flex; flex-direction: column; gap: 16px; }
+    /* hidden until the container confirms a signed-in Samsung Account */
+    .cta-group.is-hidden { display: none; }
+    .cta-hint {
+        width: 325px; font: 400 24px/33px var(--font-body);
+        text-align: center; color: #fff; display: none;
+    }
+    .cta-hint.is-open { display: block; }
+    .cta-email {
+        width: 325px; font: 400 24px/33px var(--font-body);
+        text-align: center; color: #fff;
+    }
+
+    /* ===== Buttons ===== */
+    .btn {
+        position: relative; height: 80px; border-radius: 16px;
+        box-sizing: border-box; flex: none;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; user-select: none;
+    }
+    .btn .btn-label { position: relative; z-index: 1; white-space: nowrap; }
+    /* .ButtonBG / Rect / Radius16 — the 9-patch extends 4% past the layout box */
+    .btn .btn-bg {
+        position: absolute; left: -4%; right: -4%; top: -4%; bottom: -4%;
+        border-radius: 17.28px; box-sizing: border-box;
+    }
+    /* Focused: c_basic_button_white_bg_normal_9patch */
+    .btn.is-focused .btn-bg {
+        background: #FFFFFF;
+        box-shadow: 0 7.56px 8.64px rgba(0, 0, 0, 0.7);
+    }
+    .btn.is-focused .btn-label { font: 700 32.4px/48px var(--font-body); color: #000; }
+    /* Normal: Cascade/Plane_Custom_Cascade */
+    .btn.is-normal {
+        background: rgba(63, 63, 63, 0.804321);
+        border: 2px solid rgba(130, 130, 130, 0.4);
+        box-shadow: 0 2px 2px rgba(0, 0, 0, 0.3);
+    }
+    .btn.is-normal .btn-label { font: 600 30px/44px var(--font-one); color: #fff; }
+    /* Inactive / greyed-out (step 2 background state) */
+    .btn.is-inactive { cursor: default; }
+    .btn.is-inactive .btn-bg {
+        background: rgba(255, 255, 255, 0.5);
+        border: 4.32px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 7.56px 8.64px rgba(0, 0, 0, 0.7);
+    }
+    .btn.is-inactive .btn-label { font: 700 32.4px/48px var(--font-body); color: #000; }
+
+    #sendToEmailBtn { width: 325px; }
+
+    /* ===== Disclaimer ===== */
+    #disclaimer {
+        position: absolute; left: 64px; top: 1020px;
+        width: 1792px; height: 28px;
+        display: flex; align-items: center; justify-content: center; text-align: center;
+        font: 400 20px/28px var(--font-body);
+        color: #fff; text-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+        pointer-events: none;
+    }
+
+    /* ===== Popup (step 2) ===== */
+    #popup {
+        position: absolute; left: 477px; top: 316.5px;
+        width: 966px; height: 458px; box-sizing: border-box;
+        padding: 32px 24px;
+        background: #1A1A1A; border: 2px solid #C8C8C8; border-radius: 50px;
+        display: none; z-index: 10;
+    }
+    #popup.is-open { display: block; }
+    .popup-content {
+        width: 918px; margin-left: -2px; margin-top: -2px;
+        display: flex; flex-direction: column; align-items: center; gap: 38px;
+    }
+    .popup-title {
+        width: 918px; height: 66px;
+        display: flex; align-items: center; justify-content: center; text-align: center;
+        font: 400 46px/68px var(--font-one); color: #fff;
+    }
+    .popup-body {
+        width: 838px; height: 132px;
+        display: flex; align-items: center; justify-content: center; text-align: center;
+        font: 400 30px/44px var(--font-one); color: #fff;
+        text-wrap: pretty;
+    }
+    .popup-buttons {
+        width: 918px; height: 120px; box-sizing: border-box; padding-top: 12px;
+        display: flex; justify-content: center; align-items: flex-start; gap: 16px;
+    }
+    .popup-buttons .btn { width: 272px; }
+
+    /* ===== Notification (step 3) ===== */
+    #notification {
+        position: absolute; right: 40.5px; top: 61px;
+        width: 497.5px; height: 203px; box-sizing: border-box;
+        padding: 19.2px; gap: 19.2px;
+        display: none; flex-direction: row; align-items: flex-start;
+        background: rgba(18, 18, 18, 0.8);
+        border: 0.625px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12.8px;
+        z-index: 20;
+    }
+    #notification.is-open { display: flex; }
+    .notif-logo {
+        width: 77px; height: 84px; flex: none;
+        border-radius: 16px; background: #D9D9D9; overflow: hidden;
+    }
+    .notif-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .notif-message { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 9.6px; }
+    .notif-title { font: 700 25.6px/38px var(--font-head); color: #fff; }
+    .notif-body { font: 400 25.6px/38px var(--font-body); color: #fff; }
+</style>
+</head>
+<body>
+
+<div id="stage" data-screen-label="Click to Email">
+
+    <img id="bg" src="assets/background.jpg" alt="">
+
+    <div id="backBtn" role="button" aria-label="Back">
+        <svg viewBox="1825 57 38 38" aria-hidden="true"><path d="M1838.56 63.6768L1834.49 67.5781H1848.46L1848.83 67.583C1852.02 67.6666 1854.87 68.8372 1857.31 71.0566C1859.57 73.1183 1860.82 75.3784 1860.97 77.8037L1861 77.8047L1860.99 78.9355L1861 80.0664H1860.97C1860.82 82.4922 1859.57 84.7525 1857.31 86.8145C1854.87 89.0339 1852.02 90.2044 1848.83 90.2881L1848.46 90.293H1829.48V86.585H1848.46C1850.87 86.585 1852.96 85.7624 1854.81 84.0752C1856.41 82.6132 1857.19 81.2076 1857.27 79.8262L1857.28 79.6289L1857.28 78.9355L1857.28 78.2422L1857.27 78.0449C1857.19 76.6636 1856.41 75.2588 1854.81 73.7969C1852.96 72.1094 1850.87 71.2861 1848.46 71.2861H1834.07L1838.56 75.623L1835.99 78.291L1827 69.6191L1835.99 61L1838.56 63.6768Z" fill="#fff"/></svg>
+    </div>
+
+    <div id="ctaCard">
+        <div class="cta-title">Special discount just for you!</div>
+        <div class="cta-group is-hidden" id="ctaGroup">
+            <div class="btn is-focused" id="sendToEmailBtn" role="button">
+                <div class="btn-bg"></div>
+                <div class="btn-label">Send Email</div><!-- catalogue patch: fixed CTA label, not an editable slot -->
+            </div>
+            <div class="cta-email" id="ctaEmail"></div>
+        </div>
+        <div class="cta-hint" id="ctaHint">Sign in to your Samsung account to get this offer by email.</div>
+    </div>
+
+    <div id="disclaimer">The contents of this ad and links shared via email are not affiliated with Samsung, or in anyway reflect the views of Samsung.</div>
+
+    <div id="popup" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
+        <div class="popup-content">
+            <div class="popup-title" id="popupTitle">Send offer to my email</div>
+            <div class="popup-body"><span>We'll send this special discount to the email connected to your Samsung account: <span id="popupEmail"></span></span></div>
+            <div class="popup-buttons">
+                <div class="btn is-focused" id="popupSendBtn" role="button">
+                    <div class="btn-bg"></div>
+                    <div class="btn-label">Send</div>
+                </div>
+                <div class="btn is-normal" id="popupCancelBtn" role="button">
+                    <div class="btn-bg"></div>
+                    <div class="btn-label">Cancel</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" role="status" aria-live="polite">
+        <div class="notif-logo"><!-- advertiser logo goes here --></div>
+        <div class="notif-message">
+            <div class="notif-title" id="notifTitle"></div>
+            <div class="notif-body" id="notifBody"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+/* Stage scaler — fixed 1920x1080 canvas uniformly scaled to FHD/4K/8K. */
+(function () {
+    'use strict';
+    var STAGE_W = 1920, STAGE_H = 1080;
+    var stage = document.getElementById('stage');
+    function scaleStage() {
+        var scale = Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H);
+        stage.style.transform = 'scale(' + scale + ')';
+        stage.style.left = ((window.innerWidth - STAGE_W * scale) / 2) + 'px';
+        stage.style.top = ((window.innerHeight - STAGE_H * scale) / 2) + 'px';
+    }
+    scaleStage();
+    window.addEventListener('resize', scaleStage);
+})();
+</script>
+
+<script>
+/**
+ * Samsung TV Microsite — Click to Email
+ * step 0: waiting for the container — nothing actionable
+ * step 1: entry — "Send to Email" focused
+ * step 2: popup — Send / Cancel (LEFT/RIGHT to move focus)
+ * step 3: popup closed, request in flight or done, "Send to Email" greyed out
+ *
+ * Container bridge (get-coupon-microsite, feature/click2email):
+ *   → {"getSsoState":""}                          ← {type:'ssoState', bLogin, maskedEmail}
+ *   → {"sendEmail":{flightId, creativeId}}         ← {type:'sendEmailResult', ok, status, error}
+ * flight_id / creative_id come from this page's URL query. The container adds the OSP token,
+ * the user id and the endpoint itself — the page never sees them.
+ */
+(function () {
+    'use strict';
+
+    window.$SAMSUNG = window.$SAMSUNG || {};
+
+    var KeyCodes = {
+        ENTER: [13, 29443],
+        RETURN: [10009, 88],   // 88 = X key, desktop testing
+        EXIT: [10182, 45],
+        LEFT: [37],
+        RIGHT: [39],
+        UP: [38, 29460],
+        DOWN: [40, 29461]
+    };
+
+    var isTizen = /tizen/i.test(navigator.userAgent.toLowerCase());
+    var hasContainer = window.parent !== window;
+    var DEBUG = false;
+
+    // the container needs up to 8 s for the OSP token and 15 s for /send-email
+    var SEND_EMAIL_REPLY_TIMEOUT_MS = 30000;
+
+    var TEXT = {
+        SENT_TITLE: 'Discount sent to email',
+        SENT_BODY: 'The deal was sent to your connected email: ',
+        ALREADY_SENT_TITLE: 'Offer already sent',
+        ALREADY_SENT_BODY: 'This deal was already sent to your connected email: ',
+        FAILED_TITLE: 'Could not send the offer',
+        FAILED_BODY: 'Something went wrong. Please try again later.'
+    };
+
+    function logEvent(msg) { if (DEBUG) { console.log('[ClickToEmail]', msg); } }
+    function has(list, code) { return list.indexOf(code) >= 0; }
+    function $(id) { return document.getElementById(id); }
+
+    var step = 0;
+    var popupFocus = 0; // 0 = Send, 1 = Cancel
+    var popupButtons = [];
+    var maskedEmail = '';
+    var sendTimeoutId = null;
+
+    // flight_id / creative_id from the URL query; null when missing or not a positive integer
+    function readAdIds() {
+        var params = new URLSearchParams(window.location.search);
+        var flightId = Number(params.get('flight_id'));
+        var creativeId = Number(params.get('creative_id'));
+        var isValid = function (n) { return Math.floor(n) === n && n > 0; };
+        if (!isValid(flightId) || !isValid(creativeId)) { return null; }
+        return { flightId: flightId, creativeId: creativeId };
+    }
+
+    var adIds = readAdIds();
+
+    function postToContainer(command) {
+        if (!hasContainer) { logEvent('no container, skip ' + Object.keys(command)[0]); return; }
+        // the container is a packaged app with no origin this page can name; no secrets go this way
+        window.parent.postMessage(JSON.stringify(command), '*');
+    }
+
+    function sendOfferToEmail() {
+        logEvent('sendEmail flight ' + adIds.flightId + ', creative ' + adIds.creativeId);
+        postToContainer({ sendEmail: { flightId: adIds.flightId, creativeId: adIds.creativeId } });
+
+        // no reply at all (container without sendEmail, frame detached) must not leave the page stuck
+        sendTimeoutId = setTimeout(function () {
+            sendTimeoutId = null;
+            showResult({ ok: false, error: 'NoReply' });
+        }, SEND_EMAIL_REPLY_TIMEOUT_MS);
+    }
+
+    function showNotification(title, body) {
+        $('notifTitle').textContent = title;
+        $('notifBody').textContent = body;
+        $('notification').classList.add('is-open');
+    }
+
+    function showResult(result) {
+        logEvent('sendEmail result ok: ' + result.ok + ', status: ' + result.status + ', error: ' + result.error);
+
+        if (result.ok) {
+            showNotification(TEXT.SENT_TITLE, TEXT.SENT_BODY + maskedEmail);
+            return;
+        }
+
+        // the service limiter allows one e-mail per user and creative, so a retry cannot help
+        if (result.error === 'RateLimited') {
+            showNotification(TEXT.ALREADY_SENT_TITLE, TEXT.ALREADY_SENT_BODY + maskedEmail);
+            return;
+        }
+
+        // any other failure: tell the user and let them try again
+        showNotification(TEXT.FAILED_TITLE, TEXT.FAILED_BODY);
+        step = 1;
+        setBtnState($('sendToEmailBtn'), 'focused');
+    }
+
+    // The CTA appears only when the container confirms a signed-in Samsung Account and the URL
+    // carries the ad ids — without either one there is nothing the button could send.
+    function onSsoState(state) {
+        maskedEmail = state.maskedEmail || '';
+        logEvent('ssoState bLogin: ' + state.bLogin);
+
+        if (!state.bLogin) {
+            $('ctaHint').classList.add('is-open');
+            return;
+        }
+        if (!adIds) {
+            logEvent('flight_id / creative_id missing in URL, CTA stays hidden');
+            return;
+        }
+
+        $('ctaEmail').textContent = maskedEmail;
+        $('popupEmail').textContent = maskedEmail;
+        $('ctaGroup').classList.remove('is-hidden');
+        goToStep(1);
+    }
+
+    function onMessage(event) {
+        // accept replies from the container only
+        if (event.source !== window.parent) { return; }
+
+        var msg = event.data;
+        if (typeof msg === 'string') {
+            try { msg = JSON.parse(msg); } catch (e) { return; }
+        }
+        if (!msg || typeof msg !== 'object') { return; }
+
+        if (msg.type === 'ssoState') {
+            // sign-in state can arrive only once per page; ignore late duplicates
+            if (step === 0) { onSsoState(msg); }
+            return;
+        }
+        if (msg.type === 'sendEmailResult') {
+            if (sendTimeoutId === null) { return; } // already timed out
+            clearTimeout(sendTimeoutId);
+            sendTimeoutId = null;
+            showResult(msg);
+        }
+    }
+
+    function setBtnState(el, state) {
+        el.classList.remove('is-focused', 'is-normal', 'is-inactive');
+        el.classList.add('is-' + state);
+    }
+
+    function setPopupFocus(index) {
+        popupFocus = index;
+        for (var i = 0; i < popupButtons.length; i++) {
+            setBtnState(popupButtons[i], i === popupFocus ? 'focused' : 'normal');
+        }
+    }
+
+    function goToStep(n) {
+        step = n;
+        var cta = $('sendToEmailBtn');
+        if (n === 1) {
+            $('popup').classList.remove('is-open');
+            $('notification').classList.remove('is-open');
+            setBtnState(cta, 'focused');
+        } else if (n === 2) {
+            // a retry after a failure: the old failure notification must not stay on screen
+            $('notification').classList.remove('is-open');
+            $('popup').classList.add('is-open');
+            setBtnState(cta, 'inactive');
+            setPopupFocus(0);
+        } else if (n === 3) {
+            // the notification opens when the container answers, see showResult()
+            $('popup').classList.remove('is-open');
+            setBtnState(cta, 'inactive');
+        }
+        logEvent('step ' + n);
+    }
+
+    function onSend() {
+        goToStep(3);
+        sendOfferToEmail();
+    }
+
+    function onCancel() { goToStep(1); }
+
+    function closeMicrosite(exitRoute) {
+        logEvent('Closing microsite: ' + exitRoute);
+        if (isTizen) {
+            setTimeout(function () { window.parent.postMessage('{"close":""}', '*'); }, 1000);
+        }
+    }
+
+    function onKeyDown(event) {
+        var k = event.keyCode;
+
+        if (has(KeyCodes.EXIT, k)) { closeMicrosite('remoteExitButton'); return; }
+        if (has(KeyCodes.RETURN, k)) {
+            if (step === 2) { onCancel(); return; }
+            closeMicrosite('remoteReturnButton');
+            return;
+        }
+
+        if (step === 1) {
+            if (has(KeyCodes.ENTER, k)) { goToStep(2); }
+            return;
+        }
+        if (step === 2) {
+            if (has(KeyCodes.LEFT, k)) { setPopupFocus(0); return; }
+            if (has(KeyCodes.RIGHT, k)) { setPopupFocus(1); return; }
+            if (has(KeyCodes.ENTER, k)) { popupFocus === 0 ? onSend() : onCancel(); }
+            return;
+        }
+        // step 0 / 3: nothing actionable
+    }
+
+    function onLoad() {
+        logEvent('Microsite loading. Platform: ' + (isTizen ? 'Tizen' : 'Browser'));
+
+        popupButtons = [$('popupSendBtn'), $('popupCancelBtn')];
+
+        // Pointer support (desktop testing / pointer remotes)
+        $('sendToEmailBtn').addEventListener('click', function () { if (step === 1) { goToStep(2); } });
+        $('popupSendBtn').addEventListener('click', function () { if (step === 2) { onSend(); } });
+        $('popupCancelBtn').addEventListener('click', function () { if (step === 2) { onCancel(); } });
+        $('popupSendBtn').addEventListener('mouseenter', function () { if (step === 2) { setPopupFocus(0); } });
+        $('popupCancelBtn').addEventListener('mouseenter', function () { if (step === 2) { setPopupFocus(1); } });
+        $('backBtn').addEventListener('click', function () {
+            if (step === 2) { onCancel(); } else { closeMicrosite('backButton'); }
+        });
+
+        // ask the container whether a Samsung Account is signed in; onSsoState() continues from here
+        window.addEventListener('message', onMessage);
+        postToContainer({ getSsoState: '' });
+
+        if (isTizen) {
+            setTimeout(function () { window.parent.postMessage('{"registerKey":"Return"}', '*'); }, 2000);
+        }
+        logEvent('Microsite ready.');
+    }
+
+    window.$SAMSUNG.onLoad = onLoad;
+    window.$SAMSUNG.onKeyDown = onKeyDown;
+    window.$SAMSUNG.closeMicrosite = closeMicrosite;
+    window.$SAMSUNG.sendOfferToEmail = sendOfferToEmail;
+    window.$SAMSUNG.goToStep = goToStep;
+
+    document.addEventListener('keydown', onKeyDown);
+
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        onLoad();
+    } else {
+        document.addEventListener('DOMContentLoaded', onLoad);
+    }
+})();
+</script>
+
+</body>
+</html>

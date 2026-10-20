@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, height=1080, initial-scale=1">
+<title>Standard microsite</title>
+<style>
+    /* Standard microsite: background + 0-3 videos (with thumbnails) + 0-3
+       app deeplink tiles. Layout from input/standard/image.png, authored on
+       a fixed 1920x1080 #stage scaled to the screen by scaleStage().
+
+       Configuration (URL params, so the catalogue can drive it):
+         videos=0..3   number of videos shown (default 3)
+         apps=0..3     number of app tiles shown (default 3)
+         cfg=<base64 JSON> optional content override, same shape as CONFIG below
+       Production delivery would inline CONFIG instead of reading cfg. */
+    @font-face { font-family: SamsungOne; src: url(../../../../assets/fonts/SamsungOne-400v11.woff2) format("woff2"); font-weight: 400; }
+    @font-face { font-family: SamsungOne; src: url(../../../../assets/fonts/SamsungOne-700v11.woff2) format("woff2"); font-weight: 700; }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+        font-family: SamsungOne, Arial, Helvetica, sans-serif;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    #stage {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #646464;
+        color: #fff;
+        transform-origin: top left;
+    }
+
+    /* Background 3840x2160, full bleed */
+    #background {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* ===== Video 1008x567 at 91,88 ===== */
+    #videoArea {
+        position: absolute;
+        left: 91px;
+        top: 88px;
+        width: 1008px;
+        height: 567px;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #dadada;
+    }
+    #videoArea img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    #videoArea .play-badge {
+        position: absolute;
+        left: 24px;
+        bottom: 24px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        background: rgba(0, 0, 0, 0.6);
+        font-size: 20px;
+        font-weight: 700;
+    }
+    #videoArea.is-focused { box-shadow: 0 0 0 6px #fff; }
+
+    /* ===== Video thumbnails 240x135, row under the video ===== */
+    #thumbRail {
+        position: absolute;
+        left: 91px;
+        top: 687px;
+        width: 1008px;
+        height: 135px;
+        display: flex;
+        justify-content: center;
+        gap: 32px;
+    }
+    .thumb {
+        position: relative;
+        width: 240px;
+        height: 135px;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #dadada;
+        box-shadow: 0 3px 3px 0 rgba(238, 238, 238, 0.5) inset, 0 -3px 8px 0 rgba(35, 35, 35, 0.6) inset;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb .now-playing {
+        display: none;
+        position: absolute;
+        left: 10px;
+        bottom: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.75);
+        font-size: 12px;
+    }
+    .thumb.is-playing .now-playing { display: block; }
+    .thumb.is-focused { box-shadow: 0 0 0 4px #fff; transform: scale(1.1); z-index: 2; }
+
+    /* ===== App tiles 350x110 (shown 315x99), bottom row ===== */
+    #appRail {
+        position: absolute;
+        left: 91px;
+        top: 886px;
+        width: 1008px;
+        height: 99px;
+        display: flex;
+        gap: 32px;
+    }
+    .app-tile {
+        width: 315px;
+        height: 99px;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #dadada;
+        color: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: 700;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .app-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .app-tile.is-focused { box-shadow: 0 0 0 4px #fff; transform: scale(1.06); }
+
+    /* With no videos the apps move up next to the background message area. */
+    #stage.no-video #appRail { top: 88px; }
+
+    /* ===== Back button 72px, top right ===== */
+    #backButton {
+        position: absolute;
+        right: 40px;
+        top: 40px;
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: #3a3a3a;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #backButton.is-focused { background: #fff; }
+    #backButton.is-focused path { stroke: #000; }
+
+    /* App-launch toast (preview only: on a TV the ad player launches the app) */
+    #toast {
+        position: absolute;
+        left: 50%;
+        bottom: 40px;
+        transform: translateX(-50%);
+        padding: 14px 28px;
+        border-radius: 28px;
+        background: rgba(0, 0, 0, 0.8);
+        font-size: 22px;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="stage">
+    <img id="background" src="assets/background.jpg" alt="">
+
+    <div id="videoArea" data-row="video">
+        <img id="videoPlayer" src="" alt="">
+        <span class="play-badge" id="videoTitle"></span>
+    </div>
+    <div id="thumbRail"></div>
+    <div id="appRail"></div>
+
+    <div id="backButton" data-row="back" aria-label="Back">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><path d="M12 8 6 14l6 6M6 14h15a9 9 0 0 1 0 18h-6" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <div id="toast"></div>
+</div>
+
+<script>
+/**
+ * Samsung TV Microsite — Standard template (background, videos, app tiles).
+ * Target: Tizen (Chromium M130). Follows the shared microsite contract:
+ * Tizen key codes, window.$SAMSUNG hooks, registerKey/close postMessages.
+ * Videos are represented by still images in the catalogue preview.
+ */
+(function () {
+    'use strict';
+
+    window.$SAMSUNG = window.$SAMSUNG || {};
+
+    var KeyCodes = {
+        ENTER: [13, 29443],
+        RETURN: [10009, 88],   // 88 = X key, desktop testing
+        EXIT: [10182, 45],
+        LEFT: [37],
+        RIGHT: [39],
+        UP: [38, 29460],
+        DOWN: [40, 29461]
+    };
+
+    var isTizen = /tizen/i.test(navigator.userAgent.toLowerCase());
+
+    // Default content. Each video: title + still image (posterUrl stands in
+    // for the mp4 in previews). Each app: name, tile image (350x110) and the
+    // launchApp fields the ad player needs (appId = Samsung app bundle id,
+    // appType = runtype, deeplink = in-app destination).
+    var CONFIG = {
+        videos: [
+            { title: 'Trailer', posterUrl: 'assets/video-1.jpg', thumbUrl: 'assets/video-1.jpg' },
+            { title: 'Gameplay', posterUrl: 'assets/video-2.jpg', thumbUrl: 'assets/video-2.jpg' },
+            { title: 'Behind the scenes', posterUrl: 'assets/video-3.jpg', thumbUrl: 'assets/video-3.jpg' }
+        ],
+        apps: [
+            { name: '1st App', imageUrl: '', appId: '3201907018807', appType: 'tizen', deeplink: '' },
+            { name: '2nd App', imageUrl: '', appId: '3201606009684', appType: 'tizen', deeplink: '' },
+            { name: '3rd App', imageUrl: '', appId: '111299001912', appType: 'tizen', deeplink: '' }
+        ]
+    };
+
+    function readConfig() {
+        var p = new URLSearchParams(window.location.search);
+        var cfg = CONFIG;
+        if (p.get('cfg')) {
+            try { cfg = JSON.parse(decodeURIComponent(escape(atob(p.get('cfg'))))); } catch (e) { /* keep defaults */ }
+        }
+        function count(name, list) {
+            var n = parseInt(p.get(name), 10);
+            if (isNaN(n)) { n = list.length; }
+            return Math.max(0, Math.min(3, n, list.length));
+        }
+        return {
+            videos: cfg.videos.slice(0, count('videos', cfg.videos)),
+            apps: cfg.apps.slice(0, count('apps', cfg.apps))
+        };
+    }
+
+    var cfg = readConfig();
+    var stage = document.getElementById('stage');
+    var videoArea = document.getElementById('videoArea');
+    var videoPlayer = document.getElementById('videoPlayer');
+    var videoTitle = document.getElementById('videoTitle');
+    var thumbRail = document.getElementById('thumbRail');
+    var appRail = document.getElementById('appRail');
+    var backButton = document.getElementById('backButton');
+    var toast = document.getElementById('toast');
+
+    // ── Build DOM from config ──────────────────────────────────────────
+    var thumbs = [];
+    var appTiles = [];
+    var playingIndex = 0;
+
+    if (!cfg.videos.length) {
+        stage.classList.add('no-video');
+        videoArea.style.display = 'none';
+    }
+    // Thumbnails always exist per video (the player mirrors the playing
+    // thumbnail's image); the rail is only shown when there is a choice.
+    if (cfg.videos.length < 2) { thumbRail.style.display = 'none'; }
+    if (cfg.videos.length) {
+        cfg.videos.forEach(function (v, i) {
+            var t = document.createElement('div');
+            t.className = 'thumb';
+            t.id = 'thumb' + (i + 1);
+            t.innerHTML = '<img src="' + (v.thumbUrl || v.posterUrl || '') + '" alt=""><span class="now-playing">Now playing</span>';
+            thumbRail.appendChild(t);
+            thumbs.push(t);
+        });
+    }
+    cfg.apps.forEach(function (a, i) {
+        var t = document.createElement('div');
+        t.className = 'app-tile';
+        t.id = 'app' + (i + 1);
+        if (a.imageUrl) {
+            t.innerHTML = '<img src="' + a.imageUrl + '" alt="">';
+        } else {
+            t.textContent = a.name;
+        }
+        appRail.appendChild(t);
+        appTiles.push(t);
+    });
+
+    function playerImageFor(i) {
+        var img = thumbs[i] && thumbs[i].querySelector('img');
+        return (img && img.getAttribute('src')) || cfg.videos[i].posterUrl || '';
+    }
+
+    function playVideo(i) {
+        if (!cfg.videos.length) { return; }
+        playingIndex = i;
+        videoPlayer.src = playerImageFor(i);
+        videoTitle.textContent = '▶ ' + (cfg.videos[i].title || '');
+        thumbs.forEach(function (t, j) { t.classList.toggle('is-playing', j === i); });
+    }
+
+    // ── Focus grid: rows are built from what's actually on screen ──────
+    // Row model: back button, video (1 item), thumbnails, apps.
+    var rows = [];
+    rows.push({ name: 'back', items: [backButton] });
+    if (cfg.videos.length) { rows.push({ name: 'video', items: [videoArea] }); }
+    if (thumbs.length > 1) { rows.push({ name: 'thumbs', items: thumbs }); }
+    if (appTiles.length) { rows.push({ name: 'apps', items: appTiles }); }
+
+    var rowIndex = Math.min(1, rows.length - 1);
+    var colIndex = 0;
+
+    function render() {
+        rows.forEach(function (r, ri) {
+            r.items.forEach(function (el, ci) {
+                el.classList.toggle('is-focused', ri === rowIndex && ci === colIndex);
+            });
+        });
+    }
+
+    function moveH(delta) {
+        var n = rows[rowIndex].items.length;
+        colIndex = Math.max(0, Math.min(n - 1, colIndex + delta));
+        render();
+    }
+
+    function moveV(delta) {
+        var next = Math.max(0, Math.min(rows.length - 1, rowIndex + delta));
+        if (next === rowIndex) { return; }
+        rowIndex = next;
+        colIndex = Math.min(colIndex, rows[rowIndex].items.length - 1);
+        if (rows[rowIndex].name === 'thumbs') { colIndex = playingIndex; }
+        render();
+    }
+
+    function showToast(text) {
+        toast.textContent = text;
+        toast.classList.add('show');
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(function () { toast.classList.remove('show'); }, 2500);
+    }
+
+    // launchApp bridge contract (same message as the rtb-trader QR microsite):
+    //   {"launchApp":{"category":appType,"appID":appId,"deeplink":deeplink}}
+    function openApp(app) {
+        var launchApp = { category: app.appType, appID: app.appId, deeplink: app.deeplink };
+        if (app.tizenId) { launchApp.tizenID = app.tizenId; }
+        var msg = JSON.stringify({ launchApp: launchApp });
+        if (isTizen) {
+            window.parent.postMessage(msg, '*');
+        } else {
+            showToast('Opening ' + app.name + (app.deeplink ? ' → ' + app.deeplink : ''));
+        }
+    }
+
+    function closeMicrosite(exitRoute) {
+        if (isTizen) {
+            setTimeout(function () {
+                window.parent.postMessage('{"close":""}', '*');
+            }, 1000);
+        } else {
+            showToast('Closing microsite (' + exitRoute + ')');
+        }
+    }
+
+    function activate() {
+        var row = rows[rowIndex];
+        if (row.name === 'back') { closeMicrosite('pageExitButton'); }
+        else if (row.name === 'thumbs') { playVideo(colIndex); }
+        else if (row.name === 'apps') { openApp(cfg.apps[colIndex]); }
+        else if (row.name === 'video') { showToast('▶ Play / pause'); }
+    }
+
+    function onKeyDown(event) {
+        var k = event.keyCode;
+        if (KeyCodes.EXIT.indexOf(k) >= 0) { closeMicrosite('remoteExitButton'); return; }
+        if (KeyCodes.RETURN.indexOf(k) >= 0) { closeMicrosite('remoteReturnButton'); return; }
+        if (KeyCodes.ENTER.indexOf(k) >= 0) { activate(); return; }
+        if (KeyCodes.LEFT.indexOf(k) >= 0) { moveH(-1); }
+        else if (KeyCodes.RIGHT.indexOf(k) >= 0) { moveH(1); }
+        else if (KeyCodes.UP.indexOf(k) >= 0) { moveV(-1); }
+        else if (KeyCodes.DOWN.indexOf(k) >= 0) { moveV(1); }
+        else { return; }
+        if (event.preventDefault) { event.preventDefault(); }
+    }
+
+    // ── Stage scaling (same as the other microsites) ───────────────────
+    var STAGE_W = 1920;
+    var STAGE_H = 1080;
+    function scaleStage() {
+        var scale = Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H);
+        stage.style.transform = 'scale(' + scale + ')';
+        stage.style.left = ((window.innerWidth - STAGE_W * scale) / 2) + 'px';
+        stage.style.top = ((window.innerHeight - STAGE_H * scale) / 2) + 'px';
+    }
+    window.addEventListener('resize', scaleStage);
+    scaleStage();
+
+    // Preview hook: when a thumbnail image is replaced (catalogue upload),
+    // keep the player showing the playing video's image.
+    if (window.MutationObserver && thumbs.length) {
+        new MutationObserver(function () {
+            var src = playerImageFor(playingIndex);
+            if (videoPlayer.getAttribute('src') !== src) { videoPlayer.src = src; }
+        }).observe(thumbRail, { subtree: true, attributes: true, attributeFilter: ['src'] });
+    }
+
+    function onLoad() {
+        playVideo(0);
+        render();
+        if (isTizen) {
+            setTimeout(function () {
+                window.parent.postMessage('{"registerKey":"Return"}', '*');
+            }, 2000);
+        }
+    }
+
+    window.$SAMSUNG.onLoad = onLoad;
+    window.$SAMSUNG.onKeyDown = onKeyDown;
+    window.$SAMSUNG.closeMicrosite = closeMicrosite;
+    window.$SAMSUNG.openApp = openApp;
+
+    document.addEventListener('keydown', onKeyDown);
+
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        onLoad();
+    } else {
+        document.addEventListener('DOMContentLoaded', onLoad);
+    }
+})();
+</script>
+</body>
+</html>

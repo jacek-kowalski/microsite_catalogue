@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1200">
+<title>Microsite — Samsung Ads</title>
+<link rel="icon" href="assets/brand/favicon.ico">
+<link rel="stylesheet" href="css/tokens.css?v=4">
+<link rel="stylesheet" href="css/app.css?v=4">
+</head>
+<body>
+<header id="site-header"></header>
+
+<main class="content content-wide" id="detail">
+    <nav class="breadcrumb" id="breadcrumb"></nav>
+
+    <div class="detail-head">
+        <div>
+            <h1 class="h1" id="tpl-name"></h1>
+            <p class="body muted lead" id="tpl-description"></p>
+            <div class="row" id="tpl-features" style="margin-top:12px"></div>
+        </div>
+    </div>
+
+    <div class="tabs" role="tablist" id="tabs">
+        <button class="tab" role="tab" id="tab-live" aria-controls="view-live" aria-selected="true" type="button">Live preview</button>
+        <button class="tab" role="tab" id="tab-mocks" aria-controls="view-mocks" aria-selected="false" type="button">Layout mocks</button>
+    </div>
+
+    <!-- Live preview: example in the TV + asset/copy editor -->
+    <section id="view-live" role="tabpanel" aria-labelledby="tab-live">
+        <div class="workspace">
+            <div class="stage-panel panel">
+                <div class="section">
+                    <div class="step-title"><span class="num">1</span><h2 class="h3">Select example</h2></div>
+                    <div class="toolbar">
+                        <div class="row" id="example-pills"></div>
+                        <div class="row">
+                            <label class="switch" title="Outline every replaceable area of the template"><input type="checkbox" id="toggle-layout"> Show layout</label>
+                            <button class="pill pill-sm" type="button" id="btn-reset" title="Reload the example and remove your changes"><span aria-hidden="true">↺</span> Reset</button>
+                            <button class="pill pill-sm" type="button" id="btn-fullscreen" title="Fullscreen preview"><span aria-hidden="true">⤢</span> Fullscreen</button>
+                        </div>
+                    </div>
+                    <div class="row" id="option-groups" hidden></div>
+                </div>
+
+                <div class="tv-area">
+                    <div class="tv">
+                        <div class="tv-screen" id="tv-screen">
+                            <iframe id="preview-frame" title="Microsite preview"></iframe>
+                            <div class="slot-overlay" id="slot-overlay" hidden></div>
+                        </div>
+                        <div class="tv-legs"><span></span><span></span></div>
+                    </div>
+                    <div id="remote"></div>
+                </div>
+
+                <div class="remote-hints" id="remote-hints"></div>
+                <p class="small muted" style="text-align:center;margin:0">
+                    Click the TV and use your keyboard arrows / Enter, or the remote. Backspace-style BACK is <b>X</b>, EXIT is <b>Insert</b>.
+                </p>
+            </div>
+
+            <aside class="sidebar">
+                <div class="panel section" id="assets-panel">
+                    <div class="step-title"><span class="num">2</span><h2 class="h3">Upload assets</h2></div>
+                    <p class="step-desc">Drag &amp; drop or click to replace. Files stay in your browser — nothing is uploaded.</p>
+                    <div class="slot-list" id="image-slots"></div>
+                </div>
+                <div class="panel section" id="copy-panel">
+                    <div class="step-title"><span class="num">3</span><h2 class="h3">Edit creative copy</h2></div>
+                    <div class="slot-list" id="text-slots"></div>
+                </div>
+            </aside>
+        </div>
+    </section>
+
+    <!-- Layout mocks: Figma frames / static screens -->
+    <section id="view-mocks" role="tabpanel" aria-labelledby="tab-mocks" hidden>
+        <div class="panel gallery" id="gallery"></div>
+    </section>
+</main>
+
+<div class="modal" id="fullscreen-backdrop">
+    <button class="modal-close" type="button" id="btn-fullscreen-close" aria-label="Close fullscreen">✕</button>
+</div>
+
+<footer id="site-footer"></footer>
+
+<script type="module" src="js/preview.js?v=4"></script>
+</body>
+</html>

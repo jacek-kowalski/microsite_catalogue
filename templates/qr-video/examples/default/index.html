@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, height=1080, initial-scale=1">
+<title>QR microsite</title>
+<style>
+    /* QR microsite: background + 0-3 videos + QR code with header,
+       description and action text. Layouts from
+       input/qr_microsite/qr_layouts.svg — the QR block moves with the
+       number of videos:
+         2-3 videos  QR bottom-right, header/description to its left
+         1 video     QR bottom-left under the video, text to its right
+         0 videos    larger QR mid-left, text to its right
+       Authored on a fixed 1920x1080 #stage scaled by scaleStage().
+
+       URL params (so the catalogue can drive it):
+         videos=0..3        number of videos (default 3)
+         target_url=<url>   QR destination (default https://www.samsung.com)
+       Replaces the rtb-trader generated build (kept in input/qr_microsite/)
+       with a self-contained page following the same conventions. */
+    @font-face { font-family: SamsungOne; src: url(../../../../assets/fonts/SamsungOne-400v11.woff2) format("woff2"); font-weight: 400; }
+    @font-face { font-family: SamsungOne; src: url(../../../../assets/fonts/SamsungOne-700v11.woff2) format("woff2"); font-weight: 700; }
+    @font-face { font-family: SamsungSharpSans; src: url(../../../../assets/fonts/SamsungSharpSans-700.woff2) format("woff2"); font-weight: 700; }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+        font-family: SamsungOne, Arial, Helvetica, sans-serif;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    #stage {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #646464;
+        color: #fff;
+        transform-origin: top left;
+    }
+
+    #background { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+    /* ===== Video 1008x567 at 88,88 ===== */
+    #videoArea {
+        position: absolute;
+        left: 88px;
+        top: 88px;
+        width: 1008px;
+        height: 567px;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #dadada;
+    }
+    #videoArea img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    #videoArea.is-focused { box-shadow: 0 0 0 6px #fff; }
+
+    /* ===== Thumbnails 240x135 (focus x1.1) ===== */
+    #thumbRail {
+        position: absolute;
+        left: 88px;
+        top: 687px;
+        width: 1008px;
+        height: 135px;
+        display: flex;
+        justify-content: center;
+        gap: 32px;
+    }
+    .thumb {
+        position: relative;
+        width: 240px;
+        height: 135px;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #dadada;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb .now-playing {
+        display: none;
+        position: absolute;
+        left: 10px;
+        bottom: 10px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.75);
+        font-size: 12px;
+    }
+    .thumb.is-playing .now-playing { display: block; }
+    .thumb.is-focused { box-shadow: 0 0 0 4px #fff; transform: scale(1.1); z-index: 2; }
+
+    /* ===== QR block: card (QR + action text) and copy ===== */
+    #qrBlock { position: absolute; display: flex; align-items: center; gap: 48px; }
+    #qrCard {
+        flex-shrink: 0;
+        background: #fff;
+        border-radius: 18px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-sizing: border-box;
+        padding: 14px 14px 0;
+    }
+    #qrCode canvas { display: block; width: 100%; height: 100%; }
+    #qrAction { color: #000; font-weight: 700; text-align: center; }
+    #qrCopy { display: flex; flex-direction: column; gap: 20px; }
+    #qrHeader { font-family: SamsungSharpSans, SamsungOne, Arial, sans-serif; font-weight: 700; line-height: 1.2; }
+    #qrDescription { line-height: 1.4; }
+
+    /* 2-3 videos: QR bottom-right (card 220x246 at 1612,742), copy to its left */
+    #stage.layout-multi #qrBlock { right: 88px; top: 742px; flex-direction: row-reverse; }
+    #stage.layout-multi #qrCode { width: 192px; height: 192px; }
+    #stage.layout-multi #qrAction { font-size: 18px; padding: 10px 0 12px; }
+    #stage.layout-multi #qrHeader { font-size: 36px; width: 330px; }
+    #stage.layout-multi #qrDescription { font-size: 18px; width: 352px; }
+
+    /* 1 video: QR under the video, bottom-left, copy to its right */
+    #stage.layout-single #qrBlock { left: 88px; top: 718px; }
+    #stage.layout-single #qrCode { width: 192px; height: 192px; }
+    #stage.layout-single #qrAction { font-size: 18px; padding: 10px 0 12px; }
+    #stage.layout-single #qrHeader { font-size: 36px; max-width: 700px; }
+    #stage.layout-single #qrDescription { font-size: 18px; max-width: 700px; }
+
+    /* 0 videos: bigger QR mid-left, copy to its right */
+    #stage.layout-none #qrBlock { left: 144px; top: 582px; }
+    #stage.layout-none #qrCode { width: 280px; height: 280px; }
+    #stage.layout-none #qrAction { font-size: 24px; padding: 12px 0 18px; }
+    #stage.layout-none #qrHeader { font-size: 40px; width: 460px; }
+    #stage.layout-none #qrDescription { font-size: 20px; width: 460px; }
+
+    #legalDisclaimer {
+        position: absolute;
+        left: 64px;
+        right: 64px;
+        top: 1023px;
+        text-align: center;
+        font-size: 16px;
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    #backButton {
+        position: absolute;
+        right: 40px;
+        top: 40px;
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: #3a3a3a;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #backButton.is-focused { background: #fff; }
+    #backButton.is-focused path { stroke: #000; }
+
+    #toast {
+        position: absolute;
+        left: 50%;
+        top: 40px;
+        transform: translateX(-50%);
+        padding: 14px 28px;
+        border-radius: 28px;
+        background: rgba(0, 0, 0, 0.8);
+        font-size: 22px;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="stage">
+    <img id="background" src="assets/background.jpg" alt="">
+
+    <div id="videoArea">
+        <img id="videoPlayer" src="" alt="">
+    </div>
+    <div id="thumbRail"></div>
+
+    <div id="qrBlock">
+        <div id="qrCard">
+            <div id="qrCode"></div>
+            <div id="qrAction">Scan to purchase</div>
+        </div>
+        <div id="qrCopy">
+            <div id="qrHeader">Get it on your phone</div>
+            <div id="qrDescription">Scan the code with your phone camera to open the offer and buy in a few taps.</div>
+        </div>
+    </div>
+
+    <div id="legalDisclaimer">The contents of this ad and the QR code are not affiliated with Samsung, or in anyway reflect the views of Samsung. Please refer to the advertiser's website for more information.</div>
+
+    <div id="backButton" aria-label="Back">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><path d="M12 8 6 14l6 6M6 14h15a9 9 0 0 1 0 18h-6" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <div id="toast"></div>
+</div>
+
+<script src="lib/qrcode.js"></script>
+<script>
+/**
+ * Samsung TV Microsite — QR template (background, 0-3 videos, QR + copy).
+ * Target: Tizen (Chromium M130). Shared microsite contract: Tizen key codes,
+ * window.$SAMSUNG hooks, registerKey/close postMessages. Videos are
+ * represented by still images in the catalogue preview.
+ */
+(function () {
+    'use strict';
+
+    window.$SAMSUNG = window.$SAMSUNG || {};
+
+    var KeyCodes = {
+        ENTER: [13, 29443],
+        RETURN: [10009, 88],   // 88 = X key, desktop testing
+        EXIT: [10182, 45],
+        LEFT: [37],
+        RIGHT: [39],
+        UP: [38, 29460],
+        DOWN: [40, 29461]
+    };
+
+    var isTizen = /tizen/i.test(navigator.userAgent.toLowerCase());
+
+    var VIDEOS = [
+        { title: 'Video 1', posterUrl: 'assets/video-placeholder.jpg' },
+        { title: 'Video 2', posterUrl: 'assets/video-2.jpg' },
+        { title: 'Video 3', posterUrl: 'assets/video-3.jpg' }
+    ];
+
+    var params = new URLSearchParams(window.location.search);
+    var videoCount = parseInt(params.get('videos'), 10);
+    if (isNaN(videoCount)) { videoCount = 3; }
+    videoCount = Math.max(0, Math.min(3, videoCount));
+    var videos = VIDEOS.slice(0, videoCount);
+    var targetUrl = params.get('target_url') || params.get('qr_url') || 'https://www.samsung.com';
+
+    var stage = document.getElementById('stage');
+    var videoArea = document.getElementById('videoArea');
+    var videoPlayer = document.getElementById('videoPlayer');
+    var thumbRail = document.getElementById('thumbRail');
+    var backButton = document.getElementById('backButton');
+    var toast = document.getElementById('toast');
+
+    stage.classList.add(videoCount === 0 ? 'layout-none' : videoCount === 1 ? 'layout-single' : 'layout-multi');
+    if (!videoCount) { videoArea.style.display = 'none'; }
+    if (videoCount < 2) { thumbRail.style.display = 'none'; }
+
+    var thumbs = [];
+    videos.forEach(function (v, i) {
+        var t = document.createElement('div');
+        t.className = 'thumb';
+        t.id = 'thumb' + (i + 1);
+        t.innerHTML = '<img src="' + v.posterUrl + '" alt=""><span class="now-playing">Now playing</span>';
+        thumbRail.appendChild(t);
+        thumbs.push(t);
+    });
+
+    var playingIndex = 0;
+    // The player shows the playing thumbnail's image, so a replaced
+    // thumbnail (catalogue upload) also replaces the "video".
+    function playerImageFor(i) {
+        var img = thumbs[i] && thumbs[i].querySelector('img');
+        return (img && img.getAttribute('src')) || '';
+    }
+    function playVideo(i) {
+        if (!videos.length) { return; }
+        playingIndex = i;
+        videoPlayer.src = playerImageFor(i);
+        thumbs.forEach(function (t, j) { t.classList.toggle('is-playing', j === i); });
+    }
+    if (window.MutationObserver && thumbs.length) {
+        new MutationObserver(function () {
+            var src = playerImageFor(playingIndex);
+            if (videoPlayer.getAttribute('src') !== src) { videoPlayer.src = src; }
+        }).observe(thumbRail, { subtree: true, attributes: true, attributeFilter: ['src'] });
+    }
+
+    function renderQr() {
+        var box = document.getElementById('qrCode');
+        try {
+            var q = qrcode(0, 'M');
+            q.addData(targetUrl);
+            q.make();
+            var m = q.getModuleCount();
+            var s = 8;
+            var c = document.createElement('canvas');
+            c.width = m * s;
+            c.height = m * s;
+            var ctx = c.getContext('2d');
+            for (var y = 0; y < m; y++) {
+                for (var x = 0; x < m; x++) {
+                    ctx.fillStyle = q.isDark(y, x) ? '#000' : '#fff';
+                    ctx.fillRect(x * s, y * s, s, s);
+                }
+            }
+            box.innerHTML = '';
+            box.appendChild(c);
+        } catch (e) { /* leave the white card empty */ }
+    }
+
+    // ── Focus: back button, video, thumbnails (QR is not focusable) ────
+    var rows = [{ name: 'back', items: [backButton] }];
+    if (videos.length) { rows.push({ name: 'video', items: [videoArea] }); }
+    if (thumbs.length > 1) { rows.push({ name: 'thumbs', items: thumbs }); }
+    var rowIndex = Math.min(1, rows.length - 1);
+    var colIndex = 0;
+
+    function render() {
+        rows.forEach(function (r, ri) {
+            r.items.forEach(function (el, ci) {
+                el.classList.toggle('is-focused', ri === rowIndex && ci === colIndex);
+            });
+        });
+    }
+    function moveH(d) {
+        colIndex = Math.max(0, Math.min(rows[rowIndex].items.length - 1, colIndex + d));
+        render();
+    }
+    function moveV(d) {
+        var next = Math.max(0, Math.min(rows.length - 1, rowIndex + d));
+        if (next === rowIndex) { return; }
+        rowIndex = next;
+        colIndex = rows[rowIndex].name === 'thumbs' ? playingIndex : 0;
+        render();
+    }
+
+    function showToast(text) {
+        toast.textContent = text;
+        toast.classList.add('show');
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(function () { toast.classList.remove('show'); }, 2500);
+    }
+
+    function closeMicrosite(exitRoute) {
+        if (isTizen) {
+            setTimeout(function () { window.parent.postMessage('{"close":""}', '*'); }, 1000);
+        } else {
+            showToast('Closing microsite (' + exitRoute + ')');
+        }
+    }
+
+    function activate() {
+        var row = rows[rowIndex];
+        if (row.name === 'back') { closeMicrosite('pageExitButton'); }
+        else if (row.name === 'thumbs') { playVideo(colIndex); }
+        else if (row.name === 'video') { showToast('▶ Play / pause'); }
+    }
+
+    function onKeyDown(event) {
+        var k = event.keyCode;
+        if (KeyCodes.EXIT.indexOf(k) >= 0) { closeMicrosite('remoteExitButton'); return; }
+        if (KeyCodes.RETURN.indexOf(k) >= 0) { closeMicrosite('remoteReturnButton'); return; }
+        if (KeyCodes.ENTER.indexOf(k) >= 0) { activate(); return; }
+        if (KeyCodes.LEFT.indexOf(k) >= 0) { moveH(-1); }
+        else if (KeyCodes.RIGHT.indexOf(k) >= 0) { moveH(1); }
+        else if (KeyCodes.UP.indexOf(k) >= 0) { moveV(-1); }
+        else if (KeyCodes.DOWN.indexOf(k) >= 0) { moveV(1); }
+        else { return; }
+        if (event.preventDefault) { event.preventDefault(); }
+    }
+
+    var STAGE_W = 1920;
+    var STAGE_H = 1080;
+    function scaleStage() {
+        var scale = Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H);
+        stage.style.transform = 'scale(' + scale + ')';
+        stage.style.left = ((window.innerWidth - STAGE_W * scale) / 2) + 'px';
+        stage.style.top = ((window.innerHeight - STAGE_H * scale) / 2) + 'px';
+    }
+    window.addEventListener('resize', scaleStage);
+    scaleStage();
+
+    function onLoad() {
+        renderQr();
+        playVideo(0);
+        render();
+        if (isTizen) {
+            setTimeout(function () { window.parent.postMessage('{"registerKey":"Return"}', '*'); }, 2000);
+        }
+    }
+
+    window.$SAMSUNG.onLoad = onLoad;
+    window.$SAMSUNG.onKeyDown = onKeyDown;
+    window.$SAMSUNG.closeMicrosite = closeMicrosite;
+
+    document.addEventListener('keydown', onKeyDown);
+
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        onLoad();
+    } else {
+        document.addEventListener('DOMContentLoaded', onLoad);
+    }
+})();
+</script>
+</body>
+</html>

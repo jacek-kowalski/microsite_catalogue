@@ -1,0 +1,19 @@
+{
+  "categories": [
+    {
+      "id": "general",
+      "name": "General"
+    },
+    {
+      "id": "gaming",
+      "name": "Gaming"
+    }
+  ],
+  "templates": [
+    "standard",
+    "ps-store-game",
+    "qr-video",
+    "click-to-email",
+    "polls-surveys"
+  ]
+}

@@ -1,0 +1,6 @@
+.claude/settings.local.json
+tools/.tmp/
+*.log
+.DS_Store
+Thumbs.db
+input/

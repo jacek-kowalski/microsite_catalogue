@@ -1,0 +1,263 @@
+{
+  "id": "ps-store-game",
+  "name": "PlayStation Store game page",
+  "category": "gaming",
+  "summary": "A PlayStation Store style game page with key art, edition tiles, screenshot gallery and a pre-order QR code.",
+  "description": "Full-screen PlayStation Store product page for a game pre-order. The viewer sees key art, title, ratings, platforms, edition pricing and a QR code that opens the store checkout on their phone. With the remote they move between the edition tiles and the screenshot rail and open screenshots full-screen. Advertisers get a premium, native-looking store experience that moves the viewer from the TV to a purchase.",
+  "features": [
+    "QR code to store",
+    "Edition tiles with pricing",
+    "Screenshot gallery",
+    "Full-screen viewer",
+    "Key art with blurred bleed"
+  ],
+  "remoteHints": [
+    "◀ ▶ move between tiles",
+    "▲ ▼ switch between editions and screenshots",
+    "OK open screenshot full-screen (OK again closes)",
+    "BACK close viewer / exit microsite"
+  ],
+  "interactive": true,
+  "thumbnail": "thumb.jpg",
+  "host": null,
+  "examples": [
+    {
+      "id": "cod-mw4",
+      "name": "Call of Duty: Modern Warfare 4",
+      "entry": "examples/cod-mw4/index.html",
+      "query": "?target_url=https://www.samsung.com"
+    },
+    {
+      "id": "gta6",
+      "name": "Grand Theft Auto VI",
+      "entry": "examples/gta6/index.html",
+      "query": "?target_url=https://www.samsung.com"
+    }
+  ],
+  "mocks": [],
+  "slots": [
+    {
+      "id": "background",
+      "label": "Key art",
+      "type": "image",
+      "hint": "3840×2160 JPG · subject on the right · keep left third dark for text (shown 2080×1080 sharp + blurred full-bleed)",
+      "targets": [
+        {
+          "selector": "#keyartHero",
+          "mode": "src"
+        },
+        {
+          "selector": "#keyartBleed",
+          "mode": "src"
+        }
+      ]
+    },
+    {
+      "id": "logo",
+      "label": "Store logo",
+      "type": "image",
+      "hint": "Transparent PNG, ~1391×250 (shown 44 px high; CSS turns it solid white)",
+      "targets": [
+        {
+          "selector": ".brand-row img",
+          "mode": "src"
+        }
+      ]
+    },
+    {
+      "id": "screenshot1",
+      "label": "Screenshot 1",
+      "type": "image",
+      "hint": "1920×1080 JPG (16:9) · shown at 272×140 in the rail, full-screen on OK",
+      "targets": [
+        {
+          "selector": ".screenshot-tile[data-index=\"0\"] img",
+          "mode": "src"
+        }
+      ]
+    },
+    {
+      "id": "screenshot2",
+      "label": "Screenshot 2",
+      "type": "image",
+      "hint": "1920×1080 JPG (16:9) · shown at 272×140 in the rail, full-screen on OK",
+      "targets": [
+        {
+          "selector": ".screenshot-tile[data-index=\"1\"] img",
+          "mode": "src"
+        }
+      ]
+    },
+    {
+      "id": "screenshot3",
+      "label": "Screenshot 3",
+      "type": "image",
+      "hint": "1920×1080 JPG (16:9) · shown at 272×140 in the rail, full-screen on OK",
+      "targets": [
+        {
+          "selector": ".screenshot-tile[data-index=\"2\"] img",
+          "mode": "src"
+        }
+      ]
+    },
+    {
+      "id": "screenshot4",
+      "label": "Screenshot 4",
+      "type": "image",
+      "hint": "1920×1080 JPG (16:9) · shown at 272×140 in the rail, full-screen on OK",
+      "targets": [
+        {
+          "selector": ".screenshot-tile[data-index=\"3\"] img",
+          "mode": "src"
+        }
+      ]
+    },
+    {
+      "id": "title",
+      "label": "Game title",
+      "type": "text",
+      "maxLength": 40,
+      "hint": "Up to 40 characters",
+      "targets": [
+        {
+          "selector": ".game-title",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "publisher",
+      "label": "Publisher",
+      "type": "text",
+      "maxLength": 30,
+      "hint": "Small label above the title",
+      "targets": [
+        {
+          "selector": ".publisher-label",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "tagline",
+      "label": "Tagline",
+      "type": "text",
+      "maxLength": 70,
+      "hint": "Single line, ~70 characters max",
+      "targets": [
+        {
+          "selector": ".tagline",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "preorder",
+      "label": "Pre-order badge",
+      "type": "text",
+      "maxLength": 14,
+      "hint": "Short uppercase badge, e.g. Pre-order",
+      "targets": [
+        {
+          "selector": ".preorder-badge",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "qrTitle",
+      "label": "QR title",
+      "type": "text",
+      "maxLength": 40,
+      "hint": "Headline above the QR code",
+      "targets": [
+        {
+          "selector": ".qr-title",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "qrBody",
+      "label": "QR body",
+      "type": "text",
+      "maxLength": 90,
+      "hint": "Short supporting sentence under the QR title",
+      "targets": [
+        {
+          "selector": ".qr-body",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "editionName",
+      "label": "Standard edition name",
+      "type": "text",
+      "maxLength": 24,
+      "hint": "Name of the first edition tile",
+      "targets": [
+        {
+          "selector": "#editionStandard .edition-name",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "editionPrice",
+      "label": "Standard edition price",
+      "type": "text",
+      "maxLength": 14,
+      "hint": "Price of the first edition tile, e.g. 349,00 zł",
+      "targets": [
+        {
+          "selector": "#editionStandard .edition-price",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "vaultName",
+      "label": "Second edition name",
+      "type": "text",
+      "maxLength": 24,
+      "hint": "Second edition tile name (Call of Duty example only)",
+      "targets": [
+        {
+          "selector": "#editionRelease .edition-name",
+          "mode": "text",
+          "examples": [
+            "cod-mw4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vaultPrice",
+      "label": "Second edition price",
+      "type": "text",
+      "maxLength": 14,
+      "hint": "Second edition tile price (Call of Duty example only)",
+      "targets": [
+        {
+          "selector": "#editionRelease .edition-price",
+          "mode": "text",
+          "examples": [
+            "cod-mw4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "qr",
+      "label": "QR code",
+      "type": "layout",
+      "hint": "252×252 · generated from the destination URL",
+      "targets": [
+        {
+          "selector": "#qrCode"
+        }
+      ]
+    }
+  ]
+}

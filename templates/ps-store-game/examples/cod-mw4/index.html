@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, height=1080, initial-scale=1">
+<title>Call of Duty: Modern Warfare 4 — PlayStation Store</title>
+<style>
+    /* ===== Reset =====
+       The design is authored at a fixed 1920x1080 canvas (#stage) and
+       scaled to fill whatever the real screen is (FHD/4K/8K, all 16:9)
+       via JS-driven transform:scale — see the scaleStage() script near
+       the end of <body>. html/body fill the actual viewport so #stage's
+       centering math (window.innerWidth/innerHeight) is correct. */
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: #05070c;
+        overflow: hidden;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    #stage {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #05070c;
+        color: #fff;
+        transform-origin: top left;
+    }
+
+    /* ===== Key-art bleed (blurred, oversized, full-bleed backdrop) ===== */
+    #keyartBleedWrap {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+    }
+    #keyartBleed {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: blur(48px) saturate(1.25);
+        -webkit-filter: blur(48px) saturate(1.25);
+        transform: scale(1.12);
+    }
+    #bleedScrim {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(4,6,11,.97) 0 30%, rgba(4,6,11,.8) 52%, rgba(4,6,11,.3) 76%, rgba(4,6,11,.55) 100%);
+        pointer-events: none;
+    }
+
+    /* ===== Sharp hero key art ===== */
+    #keyartHeroWrap {
+        position: absolute;
+        left: -160px;
+        top: 0;
+        bottom: 0;
+        width: 2080px;
+        overflow: hidden;
+    }
+    #keyartHero {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    /* Background crossfades when focus moves between edition tiles — see
+       setBackgroundImage() in the script below. */
+    #keyartBleed, #keyartHero {
+        transition: opacity .4s ease;
+        opacity: 1;
+    }
+    #keyartBleed.is-fading, #keyartHero.is-fading {
+        opacity: 0;
+    }
+    #scrimLeft {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 1120px;
+        background: linear-gradient(90deg, rgba(5,7,12,.96) 0%, rgba(5,7,12,.92) 34%, rgba(5,7,12,.7) 58%, rgba(5,7,12,.3) 82%, rgba(5,7,12,0) 100%);
+        pointer-events: none;
+    }
+    #scrimRight {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 720px;
+        background: linear-gradient(270deg, rgba(4,6,11,.82) 0%, rgba(4,6,11,.6) 48%, rgba(4,6,11,.22) 78%, rgba(4,6,11,0) 100%);
+        pointer-events: none;
+    }
+    #scrimBottom {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 420px;
+        background: linear-gradient(0deg, rgba(4,6,11,.97) 0%, rgba(4,6,11,.8) 34%, rgba(4,6,11,0) 100%);
+        pointer-events: none;
+    }
+    #vignette {
+        position: absolute;
+        inset: 0;
+        box-shadow: inset 0 0 240px rgba(0,0,0,.75);
+        pointer-events: none;
+    }
+
+    /* ===== Left content column ===== */
+    #contentCol {
+        position: absolute;
+        left: 96px;
+        top: 84px;
+        width: 940px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        pointer-events: none;
+    }
+    .brand-row {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+    .brand-row img {
+        height: 44px;
+        width: auto;
+        display: block;
+        filter: brightness(0) invert(1);
+        -webkit-filter: brightness(0) invert(1);
+    }
+    .brand-divider {
+        width: 1px;
+        height: 34px;
+        background: rgba(255,255,255,.28);
+    }
+    .preorder-badge {
+        padding: 8px 14px;
+        border-radius: 6px;
+        background: rgba(255,255,255,.14);
+        border: 1px solid rgba(255,255,255,.2);
+        font: 500 20px/1 ui-monospace, Menlo, monospace;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+    }
+    .format-label {
+        font: 400 26px/1 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        color: rgba(255,255,255,.72);
+    }
+    .title-block {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .publisher-label {
+        font: 500 24px/1 ui-monospace, Menlo, monospace;
+        letter-spacing: .2em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,.62);
+    }
+    .game-title {
+        font: 300 62px/1 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        letter-spacing: -.03em;
+    }
+    .tagline {
+        font: 300 28px/1.35 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        color: rgba(255,255,255,.78);
+        white-space: nowrap;
+    }
+    .rating-row {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+    .rating-badge {
+        padding: 10px 18px;
+        border-radius: 8px;
+        background: rgba(255,255,255,.16);
+        font: 500 24px/1 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        letter-spacing: .04em;
+    }
+    .rating-descriptors {
+        font: 400 24px/1 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        color: rgba(255,255,255,.62);
+    }
+    .platform-row {
+        display: flex;
+        gap: 12px;
+    }
+    .platform-chip {
+        padding: 8px 15px;
+        border-radius: 8px;
+        background: rgba(255,255,255,.12);
+        border: 1px solid rgba(255,255,255,.18);
+        font: 400 22px/1 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        color: rgba(255,255,255,.88);
+        white-space: nowrap;
+    }
+    .edition-row {
+        display: flex;
+        gap: 26px;
+        margin-top: 6px;
+        pointer-events: auto;
+    }
+    .edition-tile {
+        width: 376px;
+        height: 146px;
+        border-radius: 16px;
+        padding: 20px 26px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transform: scale(1);
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+    /* TV-remote focus ring — matches .screenshot-tile.is-focused */
+    .edition-tile.is-focused {
+        outline: 5px solid #fff;
+        outline-offset: 3px;
+        transform: scale(1.04);
+        z-index: 1;
+    }
+    #editionStandard {
+        background: linear-gradient(150deg, rgba(255,255,255,.18), rgba(255,255,255,.07));
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
+        box-shadow: 0 18px 50px rgba(0,0,0,.5);
+    }
+    #editionRelease {
+        background: rgba(255,255,255,.08);
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
+        border: 1px solid rgba(255,255,255,.16);
+        box-shadow: 0 18px 50px rgba(0,0,0,.4);
+    }
+    .edition-name { font: 500 32px/1.15 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+    .edition-sub { font: 400 24px/1.2 'Helvetica Neue', Helvetica, Arial, sans-serif; color: rgba(255,255,255,.6); }
+    .edition-price-row { display: flex; align-items: baseline; gap: 14px; white-space: nowrap; }
+    .edition-price { font: 500 42px/1 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+    .edition-price-old { font: 400 24px/1 'Helvetica Neue', Helvetica, Arial, sans-serif; color: rgba(255,255,255,.5); text-decoration: line-through; }
+    .edition-eyebrow { font: 500 20px/1 ui-monospace, Menlo, monospace; letter-spacing: .16em; text-transform: uppercase; color: rgba(255,255,255,.5); }
+    .edition-date { font: 500 32px/1.15 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+    .edition-time { font: 400 24px/1.2 'Helvetica Neue', Helvetica, Arial, sans-serif; color: rgba(255,255,255,.62); }
+
+    /* ===== QR panel ===== */
+    #qrPanelWrap {
+        position: absolute;
+        right: 96px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+    #qrPanel {
+        width: 436px;
+        padding: 26px;
+        box-sizing: border-box;
+        border-radius: 20px;
+        background: rgba(255,255,255,.08);
+        -webkit-backdrop-filter: blur(20px);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,.16);
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        align-items: center;
+        box-shadow: 0 22px 60px rgba(0,0,0,.5);
+    }
+    #qrCode {
+        width: 252px;
+        height: 252px;
+        padding: 12px;
+        box-sizing: content-box;
+        border-radius: 12px;
+        background: #fff;
+    }
+    #qrCode img, #qrCode svg, #qrCode canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+    .qr-caption {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+        text-align: center;
+    }
+    .qr-title { font: 500 30px/1.15 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+    .qr-body { font: 400 24px/1.35 'Helvetica Neue', Helvetica, Arial, sans-serif; color: rgba(255,255,255,.85); }
+
+    /* ===== Screenshot rail ===== */
+    #screenshotRailWrap {
+        position: absolute;
+        left: 96px;
+        bottom: 272px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    .rail-eyebrow {
+        font: 500 22px/1 ui-monospace, Menlo, monospace;
+        letter-spacing: .2em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,.5);
+    }
+    #screenshotRail {
+        display: flex;
+        gap: 20px;
+    }
+    .screenshot-tile {
+        width: 272px;
+        height: 140px;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 14px 40px rgba(0,0,0,.55);
+        transform: scale(1);
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .screenshot-tile img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    /* TV-remote focus ring — see .edition-tile.is-focused above for the
+       other focusable row on this page */
+    .screenshot-tile.is-focused {
+        outline: 5px solid #fff;
+        outline-offset: 3px;
+        transform: scale(1.06);
+        box-shadow: 0 18px 50px rgba(0,0,0,.7);
+        z-index: 1;
+    }
+
+    /* ===== Fullscreen screenshot viewer ===== */
+    #screenshotFullscreen {
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,.92);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+    }
+    #screenshotFullscreen.is-open {
+        display: flex;
+    }
+    #screenshotFullscreen img {
+        max-width: 88%;
+        max-height: 88%;
+        object-fit: contain;
+        border-radius: 8px;
+        box-shadow: 0 30px 90px rgba(0,0,0,.7);
+    }
+
+    /* ===== Spec strip ===== */
+    #specStrip {
+        position: absolute;
+        left: 96px;
+        right: 96px;
+        bottom: 88px;
+        display: flex;
+        gap: 48px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(255,255,255,.16);
+        pointer-events: none;
+    }
+    .spec-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .spec-label {
+        font: 500 20px/1 ui-monospace, Menlo, monospace;
+        letter-spacing: .16em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,.42);
+        white-space: nowrap;
+    }
+    .spec-value {
+        font: 400 28px/1 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        white-space: nowrap;
+    }
+    #legalDisclaimer {
+        position: absolute;
+        left: 96px;
+        right: 96px;
+        bottom: 40px;
+        font: 400 16px/1.4 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        color: rgba(255,255,255,.38);
+        pointer-events: none;
+    }
+
+</style>
+</head>
+<body>
+
+<div id="stage" data-screen-label="4a">
+
+    <div id="keyartBleedWrap">
+        <img id="keyartBleed" src="assets/COD_MW4_PRICE.jpg" alt="">
+    </div>
+    <div id="bleedScrim"></div>
+
+    <div id="keyartHeroWrap">
+        <img id="keyartHero" src="assets/COD_MW4_PRICE.jpg" alt="Call of Duty: Modern Warfare 4 key art">
+    </div>
+    <div id="scrimLeft"></div>
+    <div id="scrimRight"></div>
+    <div id="scrimBottom"></div>
+    <div id="vignette"></div>
+
+    <div id="contentCol">
+        <div class="brand-row">
+            <img src="assets/logo-ps-store.png" alt="PlayStation Store">
+            <div class="brand-divider"></div>
+            <div class="preorder-badge">Pre-order</div>
+            <div class="format-label">Full game · Digital</div>
+        </div>
+
+        <div class="title-block">
+            <div class="publisher-label">Activision</div>
+            <div class="game-title">Call of Duty: Modern Warfare 4</div>
+        </div>
+
+        <div class="tagline">Pre-order now — pre-load starts 48 hours before release.</div>
+
+        <div class="rating-row">
+            <div class="rating-badge">18</div>
+            <div class="rating-descriptors">Violence · Strong language · In-game purchases</div>
+        </div>
+
+        <div class="platform-row">
+            <div class="platform-chip">PS5</div>
+            <div class="platform-chip">PS5 Pro Enhanced</div>
+            <div class="platform-chip">1 player</div>
+            <div class="platform-chip">Online play</div>
+        </div>
+
+        <div class="edition-row">
+            <div class="edition-tile" id="editionStandard">
+                <div>
+                    <div class="edition-name">Standard Edition</div>
+                    <div class="edition-sub">MW4 Standard</div>
+                </div>
+                <div class="edition-price-row">
+                    <div class="edition-price">349,00 zł</div>
+                </div>
+            </div>
+            <div class="edition-tile" id="editionRelease">
+                <div>
+                    <div class="edition-name">Vault Edition</div>
+                    <div class="edition-sub">MW4 Vault</div>
+                </div>
+                <div class="edition-price-row">
+                    <div class="edition-price">479,00 zł</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="qrPanelWrap">
+        <div id="qrPanel">
+            <div id="qrCode"></div>
+            <div class="qr-caption">
+                <div class="qr-title">Pre-order on your phone</div>
+                <div class="qr-body">Opens store checkout. Pre-load lands on this console automatically.</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screenshotRailWrap">
+        <div class="rail-eyebrow">screenshots</div>
+        <div id="screenshotRail">
+            <div class="screenshot-tile" data-index="0"><img src="assets/MW4_CAM_05_BRANDED.jpg" alt="Screenshot 1"></div>
+            <div class="screenshot-tile" data-index="1"><img src="assets/MW4_CAM_06_BRANDED.jpg" alt="Screenshot 2"></div>
+            <div class="screenshot-tile" data-index="2"><img src="assets/MW4_CAM_009_BRANDED.jpg" alt="Screenshot 3"></div>
+            <div class="screenshot-tile" data-index="3"><img src="assets/MW4_DMZ_01_BRANDED.jpg" alt="Screenshot 4"></div>
+        </div>
+    </div>
+
+    <div id="screenshotFullscreen">
+        <img id="screenshotFullscreenImg" src="" alt="Screenshot fullscreen">
+    </div>
+
+    <div id="specStrip">
+        <div class="spec-cell"><div class="spec-label">release</div><div class="spec-value">22/10/2026</div></div>
+        <div class="spec-cell"><div class="spec-label">genre</div><div class="spec-value">Action · Shooter</div></div>
+        <div class="spec-cell"><div class="spec-label">players</div><div class="spec-value">1 · Online up to 60</div></div>
+        <div class="spec-cell"><div class="spec-label">publisher</div><div class="spec-value">Activision</div></div>
+    </div>
+
+    <div id="legalDisclaimer">When you scan this QR code, Samsung will briefly log that a scan took place for measurement purposes, but this cannot be linked back to your mobile or CTV device.</div>
+
+</div>
+
+<script>
+/**
+ * Stage scaler — the design is authored at a fixed 1920x1080 canvas and
+ * must fill the real screen at any resolution (FHD/4K/8K Smart TVs, or a
+ * PC browser window). All target resolutions are 16:9, same as the stage,
+ * so a single uniform scale (no letterboxing) always exactly fills the
+ * viewport. Not responsive by intent — this is a full-screen TV canvas,
+ * not a reflowing web page.
+ */
+(function () {
+    'use strict';
+
+    var STAGE_W = 1920, STAGE_H = 1080;
+    var stage = document.getElementById('stage');
+
+    function scaleStage() {
+        var scale = Math.min(
+            window.innerWidth / STAGE_W,
+            window.innerHeight / STAGE_H
+        );
+        stage.style.transform = 'scale(' + scale + ')';
+        // Center the scaled stage on the viewport (a no-op when the
+        // viewport is exactly 16:9, since scale then fills it exactly).
+        stage.style.left = ((window.innerWidth - STAGE_W * scale) / 2) + 'px';
+        stage.style.top = ((window.innerHeight - STAGE_H * scale) / 2) + 'px';
+    }
+
+    scaleStage();
+    window.addEventListener('resize', scaleStage);
+})();
+</script>
+
+<script>
+/* qrcode-generator v1.4.4 (lite) | MIT License | https://github.com/kazuhikoarase/qrcode-generator */
+var qrcode=function(){var r=function(r,t){var n=r,e=f[t],o=null,u=0,a=null,i=[],v={},k=function(r,t){o=function(r){for(var t=new Array(r),n=0;n<r;n+=1){t[n]=new Array(r);for(var e=0;e<r;e+=1)t[n][e]=null}return t}(u=4*n+17),p(0,0),p(u-7,0),p(0,u-7),d(),L(),y(r,t),n>=7&&B(r),null==a&&(a=A(n,e,i)),w(a,t)},p=function(r,t){for(var n=-1;n<=7;n+=1)if(!(r+n<=-1||u<=r+n))for(var e=-1;e<=7;e+=1)t+e<=-1||u<=t+e||(o[r+n][t+e]=0<=n&&n<=6&&(0==e||6==e)||0<=e&&e<=6&&(0==n||6==n)||2<=n&&n<=4&&2<=e&&e<=4)},L=function(){for(var r=8;r<u-8;r+=1)null==o[r][6]&&(o[r][6]=r%2==0);for(var t=8;t<u-8;t+=1)null==o[6][t]&&(o[6][t]=t%2==0)},d=function(){for(var r=g.getPatternPosition(n),t=0;t<r.length;t+=1)for(var e=0;e<r.length;e+=1){var u=r[t],a=r[e];if(null==o[u][a])for(var f=-2;f<=2;f+=1)for(var i=-2;i<=2;i+=1)o[u+f][a+i]=-2==f||2==f||-2==i||2==i||0==f&&0==i}},B=function(r){for(var t=g.getBCHTypeNumber(n),e=0;e<18;e+=1){var a=!r&&1==(t>>e&1);o[Math.floor(e/3)][e%3+u-8-3]=a}for(e=0;e<18;e+=1){a=!r&&1==(t>>e&1);o[e%3+u-8-3][Math.floor(e/3)]=a}},y=function(r,t){for(var n=e<<3|t,a=g.getBCHTypeInfo(n),f=0;f<15;f+=1){var i=!r&&1==(a>>f&1);f<6?o[f][8]=i:f<8?o[f+1][8]=i:o[u-15+f][8]=i}for(f=0;f<15;f+=1){i=!r&&1==(a>>f&1);f<8?o[8][u-f-1]=i:f<9?o[8][15-f-1+1]=i:o[8][15-f-1]=i}o[u-8][8]=!r},w=function(r,t){for(var n=-1,e=u-1,a=7,f=0,i=g.getMaskFunction(t),c=u-1;c>0;c-=2)for(6==c&&(c-=1);;){for(var h=0;h<2;h+=1)if(null==o[e][c-h]){var l=!1;f<r.length&&(l=1==(r[f]>>>a&1)),i(e,c-h)&&(l=!l),o[e][c-h]=l,-1==(a-=1)&&(f+=1,a=7)}if((e+=n)<0||u<=e){e-=n,n=-n;break}}},A=function(r,t,n){for(var e=h.getRSBlocks(r,t),o=l(),u=0;u<n.length;u+=1){var a=n[u];o.put(a.getMode(),4),o.put(a.getLength(),g.getLengthInBits(a.getMode(),r)),a.write(o)}var f=0;for(u=0;u<e.length;u+=1)f+=e[u].dataCount;if(o.getLengthInBits()>8*f)throw"code length overflow. ("+o.getLengthInBits()+">"+8*f+")";for(o.getLengthInBits()+4<=8*f&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*f||(o.put(236,8),o.getLengthInBits()>=8*f));)o.put(17,8);return function(r,t){for(var n=0,e=0,o=0,u=new Array(t.length),a=new Array(t.length),f=0;f<t.length;f+=1){var i=t[f].dataCount,h=t[f].totalCount-i;e=Math.max(e,i),o=Math.max(o,h),u[f]=new Array(i);for(var l=0;l<u[f].length;l+=1)u[f][l]=255&r.getBuffer()[l+n];n+=i;var s=g.getErrorCorrectPolynomial(h),v=c(u[f],s.getLength()-1).mod(s);for(a[f]=new Array(s.getLength()-1),l=0;l<a[f].length;l+=1){var k=l+v.getLength()-a[f].length;a[f][l]=k>=0?v.getAt(k):0}}var p=0;for(l=0;l<t.length;l+=1)p+=t[l].totalCount;var L=new Array(p),d=0;for(l=0;l<e;l+=1)for(f=0;f<t.length;f+=1)l<u[f].length&&(L[d]=u[f][l],d+=1);for(l=0;l<o;l+=1)for(f=0;f<t.length;f+=1)l<a[f].length&&(L[d]=a[f][l],d+=1);return L}(o,e)};return v.addData=function(r){i.push(s(r)),a=null},v.isDark=function(r,t){if(r<0||u<=r||t<0||u<=t)throw r+","+t;return o[r][t]},v.getModuleCount=function(){return u},v.make=function(){if(n<1){for(var r=1;r<40;r++){for(var t=h.getRSBlocks(r,e),o=l(),u=0;u<i.length;u++){var a=i[u];o.put(a.getMode(),4),o.put(a.getLength(),g.getLengthInBits(a.getMode(),r)),a.write(o)}var f=0;for(u=0;u<t.length;u++)f+=t[u].dataCount;if(o.getLengthInBits()<=8*f)break}n=r}k(!1,function(){for(var r=0,t=0,n=0;n<8;n+=1){k(!0,n);var e=g.getLostPoint(v);(0==n||r>e)&&(r=e,t=n)}return t}())},v};r.stringToBytes=(r.stringToBytesFuncs={default:function(r){for(var t=[],n=0;n<r.length;n+=1)t.push(255&r.charCodeAt(n));return t}}).default;var t,n,e,o,u,a=4,f={L:1,M:0,Q:3,H:2},g=(t=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],n=1335,e=7973,u=function(r){for(var t=0;0!=r;)t+=1,r>>>=1;return t},(o={}).getBCHTypeInfo=function(r){for(var t=r<<10;u(t)-u(n)>=0;)t^=n<<u(t)-u(n);return 21522^(r<<10|t)},o.getBCHTypeNumber=function(r){for(var t=r<<12;u(t)-u(e)>=0;)t^=e<<u(t)-u(e);return r<<12|t},o.getPatternPosition=function(r){return t[r-1]},o.getMaskFunction=function(r){switch(r){case 0:return function(r,t){return(r+t)%2==0};case 1:return function(r,t){return r%2==0};case 2:return function(r,t){return t%3==0};case 3:return function(r,t){return(r+t)%3==0};case 4:return function(r,t){return(Math.floor(r/2)+Math.floor(t/3))%2==0};case 5:return function(r,t){return r*t%2+r*t%3==0};case 6:return function(r,t){return(r*t%2+r*t%3)%2==0};case 7:return function(r,t){return(r*t%3+(r+t)%2)%2==0};default:throw"bad maskPattern:"+r}},o.getErrorCorrectPolynomial=function(r){for(var t=c([1],0),n=0;n<r;n+=1)t=t.multiply(c([1,i.gexp(n)],0));return t},o.getLengthInBits=function(r,t){if(1<=t&&t<10)return 8;if(t<27)return 16;if(t<41)return 16;throw"type:"+t},o.getLostPoint=function(r){for(var t=r.getModuleCount(),n=0,e=0;e<t;e+=1)for(var o=0;o<t;o+=1){for(var u=0,a=r.isDark(e,o),f=-1;f<=1;f+=1)if(!(e+f<0||t<=e+f))for(var g=-1;g<=1;g+=1)o+g<0||t<=o+g||0==f&&0==g||a==r.isDark(e+f,o+g)&&(u+=1);u>5&&(n+=3+u-5)}for(e=0;e<t-1;e+=1)for(o=0;o<t-1;o+=1){var i=0;r.isDark(e,o)&&(i+=1),r.isDark(e+1,o)&&(i+=1),r.isDark(e,o+1)&&(i+=1),r.isDark(e+1,o+1)&&(i+=1),0!=i&&4!=i||(n+=3)}for(e=0;e<t;e+=1)for(o=0;o<t-6;o+=1)r.isDark(e,o)&&!r.isDark(e,o+1)&&r.isDark(e,o+2)&&r.isDark(e,o+3)&&r.isDark(e,o+4)&&!r.isDark(e,o+5)&&r.isDark(e,o+6)&&(n+=40);for(o=0;o<t;o+=1)for(e=0;e<t-6;e+=1)r.isDark(e,o)&&!r.isDark(e+1,o)&&r.isDark(e+2,o)&&r.isDark(e+3,o)&&r.isDark(e+4,o)&&!r.isDark(e+5,o)&&r.isDark(e+6,o)&&(n+=40);var c=0;for(o=0;o<t;o+=1)for(e=0;e<t;e+=1)r.isDark(e,o)&&(c+=1);return n+=Math.abs(100*c/t/t-50)/5*10},o),i=function(){for(var r=new Array(256),t=new Array(256),n=0;n<8;n+=1)r[n]=1<<n;for(n=8;n<256;n+=1)r[n]=r[n-4]^r[n-5]^r[n-6]^r[n-8];for(n=0;n<255;n+=1)t[r[n]]=n;var e={glog:function(r){if(r<1)throw"glog("+r+")";return t[r]},gexp:function(t){for(;t<0;)t+=255;for(;t>=256;)t-=255;return r[t]}};return e}();function c(r,t){if(void 0===r.length)throw r.length+"/"+t;var n=function(){for(var n=0;n<r.length&&0==r[n];)n+=1;for(var e=new Array(r.length-n+t),o=0;o<r.length-n;o+=1)e[o]=r[o+n];return e}(),e={getAt:function(r){return n[r]},getLength:function(){return n.length},multiply:function(r){for(var t=new Array(e.getLength()+r.getLength()-1),n=0;n<e.getLength();n+=1)for(var o=0;o<r.getLength();o+=1)t[n+o]^=i.gexp(i.glog(e.getAt(n))+i.glog(r.getAt(o)));return c(t,0)},mod:function(r){if(e.getLength()-r.getLength()<0)return e;for(var t=i.glog(e.getAt(0))-i.glog(r.getAt(0)),n=new Array(e.getLength()),o=0;o<e.getLength();o+=1)n[o]=e.getAt(o);for(o=0;o<r.getLength();o+=1)n[o]^=i.gexp(i.glog(r.getAt(o))+t);return c(n,0).mod(r)}};return e}var h=function(){var r=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],t=function(r,t){return{totalCount:r,dataCount:t}},n={getRSBlocks:function(n,e){var o=function(t,n){switch(n){case 1:return r[4*(t-1)+0];case 0:return r[4*(t-1)+1];case 3:return r[4*(t-1)+2];case 2:return r[4*(t-1)+3]}}(n,e);if(void 0===o)throw"bad rs block @ typeNumber:"+n+"/errorCorrectionLevel:"+e;for(var u=o.length/3,a=[],f=0;f<u;f+=1)for(var g=o[3*f+0],i=o[3*f+1],c=o[3*f+2],h=0;h<g;h+=1)a.push(t(i,c));return a}};return n}(),l=function(){var r=[],t=0,n={getBuffer:function(){return r},getAt:function(t){return 1==(r[Math.floor(t/8)]>>>7-t%8&1)},put:function(r,t){for(var e=0;e<t;e+=1)n.putBit(1==(r>>>t-e-1&1))},getLengthInBits:function(){return t},putBit:function(n){var e=Math.floor(t/8);r.length<=e&&r.push(0),n&&(r[e]|=128>>>t%8),t+=1}};return n},s=function(t){var n=a,e=r.stringToBytes(t),o={getMode:function(){return n},getLength:function(){return e.length},write:function(r){for(var t=0;t<e.length;t+=1)r.put(e[t],8)}};return o};return r}();qrcode.stringToBytesFuncs["UTF-8"]=function(r){for(var t=[],n=0;n<r.length;n++){var e=r.charCodeAt(n);e<128?t.push(e):e<2048?t.push(192|e>>6,128|63&e):e<55296||e>=57344?t.push(224|e>>12,128|e>>6&63,128|63&e):(n++,e=65536+((1023&e)<<10|1023&r.charCodeAt(n)),t.push(240|e>>18,128|e>>12&63,128|e>>6&63,128|63&e))}return t};
+</script>
+
+<script>
+/**
+ * Samsung TV Microsite — Call of Duty: Modern Warfare 4 PlayStation Store page
+ * Target: Tizen 10 (Chromium M130). Static informational page: no arrow-key
+ * navigation, but wires the standard Samsung ad-player key contract so
+ * RETURN/EXIT close the microsite back to the video player.
+ */
+(function () {
+    'use strict';
+
+    window.$SAMSUNG = window.$SAMSUNG || {};
+
+    var KeyCodes = {
+        ENTER: [13, 29443],
+        RETURN: [10009, 88],   // 88 = X key, desktop testing
+        EXIT: [10182, 45],
+        // Tizen fires plain arrow keyCodes (37/38/39/40) for the D-pad on
+        // most remotes; UP/DOWN also have Samsung-specific aliases (see
+        // immersive_doom's patch_for_tv.py for the same 29460/29461 pair).
+        LEFT: [37],
+        RIGHT: [39],
+        UP: [38, 29460],
+        DOWN: [40, 29461]
+    };
+
+    var isTizen = /tizen/i.test(navigator.userAgent.toLowerCase());
+    var DEBUG = false;
+
+    function logEvent(msg) {
+        if (DEBUG) { console.log('[CODMW4-Microsite]', msg); }
+    }
+
+    // ── Real QR code, driven by URL params (matches the
+    // qr_with_parametrs.html microsite template's contract):
+    //   qr_url / target_url      — destination for the Standard edition QR
+    //   qr_url_2 / target_url_2  — destination for the Vault edition QR
+    //                              (falls back to qr_url/target_url if unset,
+    //                              so this variant still works with only one
+    //                              URL supplied)
+    //   adid                     — CAMPAIGN_ID-FLIGHT_ID-CREATIVE_ID[-CREATIVE_ID]
+    //   direct_qr=0               — by default the QR encodes qr_url/qr_url_2
+    //                              directly (no scan logging). Passing
+    //                              direct_qr=0 opts back into wrapping the
+    //                              destination in the rtb.adgrx.com
+    //                              tracking-relay URL, matching the
+    //                              reference template's scan-logging
+    //                              behavior.
+    function shouldWrapQr() {
+        var p = new URLSearchParams(window.location.search);
+        return p.get('direct_qr') === '0';
+    }
+
+    function getRawTargetUrl(editionIdx) {
+        var p = new URLSearchParams(window.location.search);
+        if (editionIdx === 1) {
+            return p.get('qr_url_2') || p.get('target_url_2') ||
+                p.get('qr_url') || p.get('target_url') || 'https://samsung.com';
+        }
+        return p.get('qr_url') || p.get('target_url') || 'https://samsung.com';
+    }
+
+    function buildQrTargetUrl(editionIdx) {
+        var p = new URLSearchParams(window.location.search);
+        var rawUrl = getRawTargetUrl(editionIdx);
+        try {
+            var u = new URL(rawUrl);
+            var q = new URLSearchParams(u.search);
+            ['adid', 'isTizen', 'deviceCountry', 'deviceModel', 'deviceFirmware', 'msLibraryId'].forEach(function (k) {
+                if (p.has(k)) { q.set(k, p.get(k)); }
+            });
+            u.search = q.toString();
+            return u.toString();
+        } catch (e) {
+            return rawUrl;
+        }
+    }
+
+    function parseAdid(adid) {
+        var parts = (adid || '').split('-');
+        return {
+            campaignId: parts[0] || '0',
+            flightId: parts[1] || '0',
+            creativeId: parts[2] || '0'
+        };
+    }
+
+    // editionIdx: 0 = Standard edition QR, 1 = Vault edition QR.
+    function renderQrCode(container, editionIdx) {
+        try {
+            var targetUrl = buildQrTargetUrl(editionIdx);
+            var qrUrl;
+            if (shouldWrapQr()) {
+                var urlParams = new URLSearchParams(window.location.search);
+                var adidParts = parseAdid(urlParams.get('adid'));
+                qrUrl = 'https://rtb.adgrx.com/scans?flight_id=' + adidParts.flightId +
+                    '&creative_id=' + adidParts.creativeId +
+                    '&target_url=' + encodeURIComponent(targetUrl);
+            } else {
+                // Default: encode the destination URL (with its
+                // adid/passthrough params already merged by
+                // buildQrTargetUrl) directly. No scan logging happens.
+                qrUrl = targetUrl;
+            }
+
+            var q = qrcode(0, 'L');
+            q.addData(qrUrl);
+            q.make();
+
+            var m = q.getModuleCount();
+            var s = 8; // px per module, downscaled to 100% via CSS on #qrCode canvas
+            var c = document.createElement('canvas');
+            c.width = m * s;
+            c.height = m * s;
+
+            var ctx = c.getContext('2d');
+            var x, y;
+            for (y = 0; y < m; y++) {
+                for (x = 0; x < m; x++) {
+                    ctx.fillStyle = q.isDark(y, x) ? '#0b0d0c' : '#fff';
+                    ctx.fillRect(x * s, y * s, s, s);
+                }
+            }
+            container.innerHTML = '';
+            container.appendChild(c);
+        } catch (e) {
+            logEvent('QR render failed: ' + e);
+        }
+    }
+
+    // ── Focus grid: two focusable rows — the edition tiles (row 0) and the
+    // screenshot rail (row 1). UP/DOWN switches row (each row remembers its
+    // own last column so hopping back and forth doesn't reset position).
+    // LEFT/RIGHT moves within the current row, clamped at its bounds (no
+    // wraparound), matching the rest of this page's remote-input convention.
+    // Focus starts on the leftmost edition tile (editionStandard). ──
+    var editionTiles = [];
+    var editionIndex = 0;
+    var screenshotTiles = [];
+    var screenshotIndex = 0;
+    var focusRow = 0; // 0 = edition tiles, 1 = screenshots
+    var isFullscreenOpen = false;
+
+    // Background art swap, keyed by focused edition tile — crossfades via
+    // the .is-fading opacity transition on #keyartBleed/#keyartHero (see
+    // <style> above) rather than swapping src instantly.
+    var EDITION_BACKGROUNDS = [
+        'assets/COD_MW4_PRICE.jpg', // editionStandard
+        'assets/COD_MW4_PARK.jpg'   // editionRelease (Vault Edition)
+    ];
+    var currentBackgroundUrl = EDITION_BACKGROUNDS[0];
+    var backgroundFadeTimer = null;
+
+    function setBackgroundImage(url) {
+        var bleedImg = document.getElementById('keyartBleed');
+        var heroImg = document.getElementById('keyartHero');
+        if (url === currentBackgroundUrl) { return; }
+        currentBackgroundUrl = url;
+
+        if (backgroundFadeTimer) { clearTimeout(backgroundFadeTimer); }
+        bleedImg.classList.add('is-fading');
+        heroImg.classList.add('is-fading');
+        backgroundFadeTimer = setTimeout(function () {
+            bleedImg.src = url;
+            heroImg.src = url;
+            bleedImg.classList.remove('is-fading');
+            heroImg.classList.remove('is-fading');
+        }, 400); // matches the .4s opacity transition in <style>
+    }
+
+    // Re-renders the QR code for whichever edition tile is focused —
+    // called alongside setBackgroundImage() so both update together.
+    function updateQrCodeForEdition() {
+        renderQrCode(document.getElementById('qrCode'), editionIndex);
+    }
+
+    function updateFocusVisuals() {
+        var i;
+        for (i = 0; i < editionTiles.length; i++) {
+            editionTiles[i].classList.toggle('is-focused', focusRow === 0 && i === editionIndex);
+        }
+        for (i = 0; i < screenshotTiles.length; i++) {
+            screenshotTiles[i].classList.toggle('is-focused', focusRow === 1 && i === screenshotIndex);
+        }
+    }
+
+    function moveFocusHorizontal(delta) {
+        if (focusRow === 0) {
+            if (!editionTiles.length) { return; }
+            editionIndex += delta;
+            if (editionIndex < 0) { editionIndex = 0; }
+            if (editionIndex > editionTiles.length - 1) { editionIndex = editionTiles.length - 1; }
+            setBackgroundImage(EDITION_BACKGROUNDS[editionIndex]);
+            updateQrCodeForEdition();
+        } else {
+            if (!screenshotTiles.length) { return; }
+            screenshotIndex += delta;
+            if (screenshotIndex < 0) { screenshotIndex = 0; }
+            if (screenshotIndex > screenshotTiles.length - 1) { screenshotIndex = screenshotTiles.length - 1; }
+        }
+        updateFocusVisuals();
+    }
+
+    function moveFocusVertical(delta) {
+        var nextRow = focusRow + delta;
+        if (nextRow < 0) { nextRow = 0; }
+        if (nextRow > 1) { nextRow = 1; }
+        if (nextRow === focusRow) { return; }
+        focusRow = nextRow;
+        if (focusRow === 0) {
+            setBackgroundImage(EDITION_BACKGROUNDS[editionIndex]);
+            updateQrCodeForEdition();
+        }
+        updateFocusVisuals();
+    }
+
+    function openFullscreen(index) {
+        var tile = screenshotTiles[index];
+        if (!tile) { return; }
+        var img = tile.querySelector('img');
+        var fsImg = document.getElementById('screenshotFullscreenImg');
+        fsImg.src = img.src;
+        fsImg.alt = img.alt;
+        document.getElementById('screenshotFullscreen').classList.add('is-open');
+        isFullscreenOpen = true;
+    }
+
+    function closeFullscreen() {
+        document.getElementById('screenshotFullscreen').classList.remove('is-open');
+        isFullscreenOpen = false;
+    }
+
+    function initFocusGrid() {
+        var editionEls = document.querySelectorAll('.edition-tile');
+        var screenshotEls = document.querySelectorAll('.screenshot-tile');
+        var i;
+        editionTiles = [];
+        for (i = 0; i < editionEls.length; i++) {
+            editionTiles.push(editionEls[i]);
+        }
+        screenshotTiles = [];
+        for (i = 0; i < screenshotEls.length; i++) {
+            screenshotTiles.push(screenshotEls[i]);
+        }
+        focusRow = 0;
+        editionIndex = 0;
+        screenshotIndex = 0;
+        updateFocusVisuals();
+    }
+
+    function closeMicrosite(exitRoute) {
+        logEvent('Closing microsite: ' + exitRoute);
+        if (isTizen) {
+            setTimeout(function () {
+                window.parent.postMessage('{"close":""}', "*");
+            }, 1000);
+        }
+    }
+
+    function onKeyDown(event) {
+        var keyCode = event.keyCode;
+
+        if (KeyCodes.EXIT.indexOf(keyCode) >= 0) {
+            if (isFullscreenOpen) { closeFullscreen(); return; }
+            closeMicrosite('remoteExitButton');
+            return;
+        }
+        if (KeyCodes.RETURN.indexOf(keyCode) >= 0) {
+            if (isFullscreenOpen) { closeFullscreen(); return; }
+            closeMicrosite('remoteReturnButton');
+            return;
+        }
+        if (KeyCodes.ENTER.indexOf(keyCode) >= 0) {
+            if (isFullscreenOpen) {
+                closeFullscreen();
+            } else if (focusRow === 1) {
+                // OK only does something on the screenshot row — the
+                // edition tiles are informational, not openable.
+                openFullscreen(screenshotIndex);
+            }
+            return;
+        }
+        if (isFullscreenOpen) {
+            // While the fullscreen viewer is open, only OK/RETURN/EXIT do
+            // anything (all handled above) — arrows are ignored.
+            return;
+        }
+        if (KeyCodes.LEFT.indexOf(keyCode) >= 0) {
+            moveFocusHorizontal(-1);
+            return;
+        }
+        if (KeyCodes.RIGHT.indexOf(keyCode) >= 0) {
+            moveFocusHorizontal(1);
+            return;
+        }
+        if (KeyCodes.UP.indexOf(keyCode) >= 0) {
+            moveFocusVertical(-1);
+            return;
+        }
+        if (KeyCodes.DOWN.indexOf(keyCode) >= 0) {
+            moveFocusVertical(1);
+            return;
+        }
+    }
+
+    function onLoad() {
+        logEvent('Microsite loading. Platform: ' + (isTizen ? 'Tizen' : 'Browser'));
+
+        initFocusGrid();
+        updateQrCodeForEdition();
+
+        if (isTizen) {
+            setTimeout(function () {
+                window.parent.postMessage('{"registerKey":"Return"}', "*");
+            }, 2000);
+        }
+
+        logEvent('Microsite ready.');
+    }
+
+    window.$SAMSUNG.onLoad = onLoad;
+    window.$SAMSUNG.onKeyDown = onKeyDown;
+    window.$SAMSUNG.closeMicrosite = closeMicrosite;
+
+    document.addEventListener('keydown', onKeyDown);
+
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        onLoad();
+    } else {
+        document.addEventListener('DOMContentLoaded', onLoad);
+    }
+})();
+</script>
+
+</body>
+</html>

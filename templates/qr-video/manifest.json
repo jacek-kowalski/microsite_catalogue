@@ -1,0 +1,172 @@
+{
+  "id": "qr-video",
+  "name": "QR code + video",
+  "category": "general",
+  "summary": "Brand page with a scannable QR code, header and description, plus 0–3 videos — the QR moves to fit the layout.",
+  "description": "A full-screen page that hands the viewer over to their phone: a QR code with a short action text, a header and a description next to it, over a branded background. Add up to three videos to switch between with the remote; the QR block repositions itself for 0, 1 or 2–3 videos. Point the QR code at any URL.",
+  "features": [
+    "QR code to any URL",
+    "0–3 videos",
+    "Header + description",
+    "Adaptive layout"
+  ],
+  "remoteHints": [
+    "▲ ▼ move between rows",
+    "◀ ▶ choose a video",
+    "OK play video",
+    "BACK close microsite"
+  ],
+  "interactive": true,
+  "thumbnail": "thumb.jpg",
+  "host": null,
+  "examples": [
+    {
+      "id": "default",
+      "name": "QR microsite",
+      "entry": "examples/default/index.html",
+      "query": "?target_url=https://www.samsung.com"
+    }
+  ],
+  "mocks": [],
+  "slots": [
+    {
+      "id": "background",
+      "label": "Background",
+      "type": "image",
+      "hint": "3840×2160 JPG · full screen",
+      "targets": [
+        {
+          "selector": "#background",
+          "mode": "src"
+        }
+      ]
+    },
+    {
+      "id": "videoPlayer",
+      "label": "Video",
+      "type": "layout",
+      "hint": "Container 1008×567, 16:9 · asset 1920×1080",
+      "targets": [
+        {
+          "selector": "#videoArea"
+        }
+      ],
+      "layoutSize": "1920 × 1080 px, 16:9"
+    },
+    {
+      "id": "video1",
+      "label": "Video 1 (mock image)",
+      "type": "image",
+      "hint": "1920×1080 still, 16:9 · stands in for the video · thumbnail 240×135",
+      "targets": [
+        {
+          "selector": "#thumb1 img",
+          "mode": "src"
+        }
+      ],
+      "layoutLabel": "Thumbnail",
+      "layoutSize": "240 × 135 px, 16:9"
+    },
+    {
+      "id": "video2",
+      "label": "Video 2 (mock image)",
+      "type": "image",
+      "hint": "1920×1080 still, 16:9 · thumbnail 240×135",
+      "targets": [
+        {
+          "selector": "#thumb2 img",
+          "mode": "src"
+        }
+      ],
+      "layoutLabel": "Thumbnail",
+      "layoutSize": "240 × 135 px, 16:9"
+    },
+    {
+      "id": "video3",
+      "label": "Video 3 (mock image)",
+      "type": "image",
+      "hint": "1920×1080 still, 16:9 · thumbnail 240×135",
+      "targets": [
+        {
+          "selector": "#thumb3 img",
+          "mode": "src"
+        }
+      ],
+      "layoutLabel": "Thumbnail",
+      "layoutSize": "240 × 135 px, 16:9"
+    },
+    {
+      "id": "qr",
+      "label": "QR code",
+      "type": "layout",
+      "hint": "Generated from the destination URL",
+      "targets": [
+        {
+          "selector": "#qrCode"
+        }
+      ]
+    },
+    {
+      "id": "header",
+      "label": "Header",
+      "type": "text",
+      "maxLength": 40,
+      "targets": [
+        {
+          "selector": "#qrHeader",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "description",
+      "label": "Description",
+      "type": "text",
+      "maxLength": 120,
+      "targets": [
+        {
+          "selector": "#qrDescription",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "action",
+      "label": "Action text (under QR)",
+      "type": "text",
+      "maxLength": 24,
+      "targets": [
+        {
+          "selector": "#qrAction",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "legal",
+      "label": "Legal disclaimer",
+      "type": "text",
+      "maxLength": 200,
+      "targets": [
+        {
+          "selector": "#legalDisclaimer",
+          "mode": "text"
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "id": "videos",
+      "label": "Videos",
+      "param": "videos",
+      "values": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "default": 3
+    }
+  ]
+}

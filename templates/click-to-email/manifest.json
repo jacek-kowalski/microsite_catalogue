@@ -1,0 +1,111 @@
+{
+  "id": "click-to-email",
+  "name": "Click to Email",
+  "category": "general",
+  "summary": "Viewers get an offer sent to their Samsung Account email with one remote click.",
+  "description": "A discount banner with a Send to Email button. The viewer presses OK, confirms in a popup that the offer goes to the email linked to their Samsung Account, and gets an on-screen notification once it is sent. Advertisers collect leads and deliver coupons without the viewer typing anything on the TV. Requires a signed-in Samsung Account on the TV.",
+  "features": [
+    "No typing on the TV",
+    "Sent to Samsung Account email",
+    "Confirmation popup",
+    "Success notification with logo"
+  ],
+  "remoteHints": [
+    "OK select / confirm",
+    "◀ ▶ choose Send or Cancel in the popup",
+    "BACK cancel popup / exit microsite"
+  ],
+  "interactive": true,
+  "thumbnail": "thumb.jpg",
+  "host": "click-to-email",
+  "examples": [
+    {
+      "id": "default",
+      "name": "Click to Email",
+      "entry": "examples/default/index.html",
+      "query": "?flight_id=1&creative_id=1"
+    }
+  ],
+  "mocks": [
+    {
+      "src": "mocks/step-1.jpg",
+      "caption": "Step 1 — Offer banner with the Send to Email button"
+    },
+    {
+      "src": "mocks/step-2.jpg",
+      "caption": "Step 2 — Confirmation popup: send the offer to the Samsung Account email"
+    },
+    {
+      "src": "mocks/step-3.jpg",
+      "caption": "Step 3 — Notification confirms the offer was sent"
+    }
+  ],
+  "slots": [
+    {
+      "id": "background",
+      "label": "Background",
+      "type": "image",
+      "hint": "3840×2160 JPG (16:9) · displayed 1940×1091 and mirrored by default (the upload is shown un-mirrored) · text card bottom-left, popup centre, notification top-right",
+      "targets": [
+        {
+          "selector": "#bg",
+          "mode": "src",
+          "style": {
+            "transform": "none"
+          }
+        }
+      ]
+    },
+    {
+      "id": "logo",
+      "label": "Advertiser logo",
+      "type": "image",
+      "hint": "PNG with transparent background, 154×168 px (shown 77×84 px in the notification, rounded corners, fitted inside)",
+      "targets": [
+        {
+          "selector": ".notif-logo",
+          "mode": "inject-img"
+        }
+      ]
+    },
+    {
+      "id": "cta",
+      "label": "CTA title",
+      "type": "text",
+      "maxLength": 50,
+      "hint": "Up to ~50 characters, centered in a 325 px column, 40 px bold",
+      "targets": [
+        {
+          "selector": ".cta-title",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "popupTitle",
+      "label": "Popup title",
+      "type": "text",
+      "maxLength": 40,
+      "hint": "Up to ~40 characters (46 px, one line in a 918 px box)",
+      "targets": [
+        {
+          "selector": "#popupTitle",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "disclaimer",
+      "label": "Disclaimer",
+      "type": "text",
+      "maxLength": 160,
+      "hint": "Single 20 px line at the bottom of the screen",
+      "targets": [
+        {
+          "selector": "#disclaimer",
+          "mode": "text"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,169 @@
+{
+  "id": "standard",
+  "name": "Standard microsite",
+  "category": "general",
+  "summary": "Full-screen brand page with a background, up to 3 videos and up to 3 app tiles that open apps on the TV.",
+  "description": "The core Samsung Ads microsite: a full-bleed branded background, a video player with up to three videos to switch between, and up to three app tiles that deeplink straight into an app on the TV (e.g. a streaming title or a store). Viewers move with the remote, pick a video from the thumbnails and press OK on a tile to open the app. Configure 0–3 videos and 0–3 apps to fit the campaign.",
+  "features": [
+    "0–3 videos",
+    "0–3 app deeplinks",
+    "Branded background",
+    "Video thumbnails"
+  ],
+  "remoteHints": [
+    "▲ ▼ move between rows",
+    "◀ ▶ move along a row",
+    "OK play video / open app",
+    "BACK close microsite"
+  ],
+  "interactive": true,
+  "thumbnail": "thumb.jpg",
+  "host": null,
+  "examples": [
+    {
+      "id": "default",
+      "name": "Standard",
+      "entry": "examples/default/index.html",
+      "query": ""
+    }
+  ],
+  "options": [
+    {
+      "id": "videos",
+      "label": "Videos",
+      "param": "videos",
+      "values": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "default": 3
+    },
+    {
+      "id": "apps",
+      "label": "App tiles",
+      "param": "apps",
+      "values": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "default": 3
+    }
+  ],
+  "mocks": [
+    {
+      "src": "mocks/layout.png",
+      "caption": "Template layout — asset sizes"
+    }
+  ],
+  "slots": [
+    {
+      "id": "background",
+      "label": "Background",
+      "type": "image",
+      "hint": "3840×2160 JPG · full screen · keep the left 1100 px calm behind video and tiles",
+      "targets": [
+        {
+          "selector": "#background",
+          "mode": "src"
+        }
+      ]
+    },
+    {
+      "id": "videoPlayer",
+      "label": "Video",
+      "type": "layout",
+      "hint": "1920×1080 px, 16:9 · plays the selected video",
+      "targets": [
+        {
+          "selector": "#videoArea"
+        }
+      ],
+      "layoutSize": "1920 × 1080 px, 16:9"
+    },
+    {
+      "id": "video1",
+      "label": "Video 1 (mock image)",
+      "type": "image",
+      "hint": "1920×1080 still, 16:9 · stands in for the video in the player · thumbnail shown 240×135",
+      "targets": [
+        {
+          "selector": "#thumb1 img",
+          "mode": "src"
+        }
+      ],
+      "layoutLabel": "Thumbnail",
+      "layoutSize": "240 × 135 px, 16:9"
+    },
+    {
+      "id": "video2",
+      "label": "Video 2 (mock image)",
+      "type": "image",
+      "hint": "1920×1080 still, 16:9 · stands in for the video in the player · thumbnail shown 240×135",
+      "targets": [
+        {
+          "selector": "#thumb2 img",
+          "mode": "src"
+        }
+      ],
+      "layoutLabel": "Thumbnail",
+      "layoutSize": "240 × 135 px, 16:9"
+    },
+    {
+      "id": "video3",
+      "label": "Video 3 (mock image)",
+      "type": "image",
+      "hint": "1920×1080 still, 16:9 · stands in for the video in the player · thumbnail shown 240×135",
+      "targets": [
+        {
+          "selector": "#thumb3 img",
+          "mode": "src"
+        }
+      ],
+      "layoutLabel": "Thumbnail",
+      "layoutSize": "240 × 135 px, 16:9"
+    },
+    {
+      "id": "app1",
+      "label": "App tile 1",
+      "type": "image",
+      "hint": "350×110 PNG/JPG · app logo or artwork, rounded corners applied",
+      "targets": [
+        {
+          "selector": "#app1",
+          "mode": "inject-img"
+        }
+      ],
+      "layoutLabel": "1st App"
+    },
+    {
+      "id": "app2",
+      "label": "App tile 2",
+      "type": "image",
+      "hint": "350×110 PNG/JPG",
+      "targets": [
+        {
+          "selector": "#app2",
+          "mode": "inject-img"
+        }
+      ],
+      "layoutLabel": "2nd App"
+    },
+    {
+      "id": "app3",
+      "label": "App tile 3",
+      "type": "image",
+      "hint": "350×110 PNG/JPG",
+      "targets": [
+        {
+          "selector": "#app3",
+          "mode": "inject-img"
+        }
+      ],
+      "layoutLabel": "3rd App"
+    }
+  ]
+}
