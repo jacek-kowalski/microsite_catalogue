@@ -8,11 +8,13 @@
     "No typing on the TV",
     "Sent to Samsung Account email",
     "Confirmation popup",
-    "Success notification with logo"
+    "Success notification with logo",
+    "0–3 videos"
   ],
   "remoteHints": [
-    "OK select / confirm",
-    "◀ ▶ choose Send or Cancel in the popup",
+    "▲ ▼ move between video, thumbnails and button",
+    "◀ ▶ choose a video / Send or Cancel",
+    "OK play video / confirm",
     "BACK cancel popup / exit microsite"
   ],
   "interactive": true,
@@ -27,6 +29,18 @@
     }
   ],
   "mocks": [
+    {
+      "src": "mocks/variant-no-video.jpg",
+      "caption": "Variant — no video"
+    },
+    {
+      "src": "mocks/variant-1-video.jpg",
+      "caption": "Variant — 1 video"
+    },
+    {
+      "src": "mocks/variant-2-3-videos.jpg",
+      "caption": "Variant — 2–3 videos"
+    },
     {
       "src": "mocks/step-1.jpg",
       "caption": "Step 1 — Offer banner with the Send to Email button"
@@ -53,6 +67,60 @@
           "style": {
             "transform": "none"
           }
+        }
+      ]
+    },
+    {
+      "id": "videoPlayer",
+      "label": "Video",
+      "type": "layout",
+      "hint": "1920×1080 px, 16:9 · plays the selected video",
+      "layoutSize": "1920 × 1080 px, 16:9",
+      "targets": [
+        {
+          "selector": "#videoArea"
+        }
+      ]
+    },
+    {
+      "id": "video1",
+      "label": "Video 1 (mock image)",
+      "type": "image",
+      "hint": "1920×1080 still, 16:9 · stands in for the video · thumbnail 240×135",
+      "layoutLabel": "Thumbnail",
+      "layoutSize": "240 × 135 px, 16:9",
+      "targets": [
+        {
+          "selector": "#thumb1 img",
+          "mode": "src"
+        }
+      ]
+    },
+    {
+      "id": "video2",
+      "label": "Video 2 (mock image)",
+      "type": "image",
+      "hint": "1920×1080 still, 16:9 · thumbnail 240×135",
+      "layoutLabel": "Thumbnail",
+      "layoutSize": "240 × 135 px, 16:9",
+      "targets": [
+        {
+          "selector": "#thumb2 img",
+          "mode": "src"
+        }
+      ]
+    },
+    {
+      "id": "video3",
+      "label": "Video 3 (mock image)",
+      "type": "image",
+      "hint": "1920×1080 still, 16:9 · thumbnail 240×135",
+      "layoutLabel": "Thumbnail",
+      "layoutSize": "240 × 135 px, 16:9",
+      "targets": [
+        {
+          "selector": "#thumb3 img",
+          "mode": "src"
         }
       ]
     },
@@ -106,6 +174,23 @@
           "mode": "text"
         }
       ]
+    }
+  ],
+  "layoutKeep": [
+    "#sendToEmailBtn"
+  ],
+  "options": [
+    {
+      "id": "videos",
+      "label": "Videos",
+      "param": "videos",
+      "values": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "default": 0
     }
   ]
 }

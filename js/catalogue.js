@@ -1,9 +1,9 @@
 // Catalogue (index) page: category tiles + template cards.
 // The selected category is kept in ?category= so links are shareable.
 
-import { loadCatalogue } from './data.js?v=4';
-import { renderChrome, icons, esc, h } from './ui.js?v=4';
-import { applyLayout } from './layout.js?v=4';
+import { loadCatalogue } from './data.js?v=8';
+import { renderChrome, icons, esc, h } from './ui.js?v=8';
+import { applyLayout } from './layout.js?v=8';
 
 renderChrome();
 
@@ -51,7 +51,7 @@ function renderCards(categories, templates, active) {
             <a class="card" href="microsite.html?id=${encodeURIComponent(t.id)}">
                 <div class="card-media">
                     ${t.interactive && t.examples.length
-                        ? `<iframe class="card-layout" tabindex="-1" aria-hidden="true" data-template="${esc(t.id)}" src="${esc(t.examples[0].url)}"></iframe>`
+                        ? `<iframe class="card-layout" tabindex="-1" aria-hidden="true" data-template="${esc(t.id)}" data-src="${esc(t.examples[0].url)}"></iframe>`
                         : (t.thumbnailUrl ? `<img src="${esc(t.thumbnailUrl)}" alt="" loading="lazy" onerror="this.remove()">` : '')}
                     <span class="badge">${esc(cat ? cat.name : t.category)}</span>
                 </div>
@@ -67,17 +67,36 @@ function renderCards(categories, templates, active) {
 
 // Cards show the template as a grey labelled layout (no advertiser assets),
 // rendered from the live microsite in a small, non-interactive iframe.
-function wireLayoutCards(templates) {
-    gridEl.querySelectorAll('iframe.card-layout').forEach(frame => {
+// Templates with a host mock get it here too, so they reach their main
+// screen (click-to-email only shows its CTA once the "TV" replies).
+const hostModules = {};
+
+async function wireLayoutCards(templates) {
+    for (const frame of gridEl.querySelectorAll('iframe.card-layout')) {
         const t = templates.find(x => x.id === frame.dataset.template);
+        if (!t) { continue; }
+        if (t.host) {
+            try {
+                hostModules[t.host] = hostModules[t.host] || await import(`./hosts/${t.host}.js?v=8`);
+                hostModules[t.host].attach(frame);
+            } catch (err) {
+                console.error('[catalogue] host module failed', t.host, err);
+            }
+        }
+        const layout = () => applyLayout(frame.contentDocument, t.slots || [], t.examples[0].id, t.layoutKeep || []);
+        // The frame stays invisible (grey card behind it) until the layout has
+        // been applied, so the sample assets never flash. Microsites that build
+        // their DOM after load, or wait for a host reply, get more passes
+        // before the frame is revealed.
         frame.addEventListener('load', () => {
-            const d = frame.contentDocument;
-            if (!d || !t) { return; }
-            applyLayout(d, t.slots || [], t.examples[0].id);
-            // microsites that build their DOM after load (or swap images) get a second pass
-            setTimeout(() => applyLayout(d, t.slots || [], t.examples[0].id), 600);
+            if (!frame.contentDocument) { return; }
+            layout();
+            setTimeout(layout, 600);
+            setTimeout(() => { layout(); frame.classList.add('is-ready'); }, 1200);
         });
-    });
+        // a host attached after the iframe started loading must be in place before its first message
+        frame.src = frame.dataset.src;
+    }
 }
 
 async function render() {

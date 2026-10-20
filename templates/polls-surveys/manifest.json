@@ -2,18 +2,31 @@
   "id": "polls-surveys",
   "name": "Polls & surveys",
   "category": "general",
-  "summary": "Ask viewers a question on the TV and collect answers with the remote.",
-  "description": "A poll or survey layout where viewers answer with the remote control directly on the TV screen. Advertisers gather quick feedback and sentiment during the ad. This template is shown as design mock-ups only.",
+  "summary": "Ask viewers a question on the TV — 2–4 answers, a reward QR code for the right one, and 0–3 videos.",
+  "description": "A quiz or poll the viewer answers with the remote. A correct answer reveals a QR code with a reward (e.g. a discount); a wrong one offers \"Try again\". Add a brand logo, a footer line and up to three videos; the layout adapts to 0, 1 or 2–3 videos like the QR and Click-to-Email templates.",
   "features": [
-    "Poll question",
-    "Remote-based answers",
-    "Two layout variants"
+    "2–4 answers",
+    "Reward QR code",
+    "0–3 videos",
+    "Try again flow"
   ],
-  "remoteHints": [],
-  "interactive": false,
+  "remoteHints": [
+    "▲ ▼ choose an answer",
+    "◀ ▶ move between poll and video",
+    "OK answer / try again / play video",
+    "BACK back to question / exit"
+  ],
+  "interactive": true,
   "thumbnail": "mocks/variant1-01.jpg",
   "host": null,
-  "examples": [],
+  "examples": [
+    {
+      "id": "default",
+      "name": "Poll",
+      "entry": "examples/default/index.html",
+      "query": "?target_url=https://www.samsung.com"
+    }
+  ],
   "mocks": [
     {
       "src": "mocks/variant1-07.jpg",
@@ -160,5 +173,220 @@
       "caption": "Template layout · Wrong answer: “Try again” button"
     }
   ],
-  "slots": []
+  "slots": [
+    {
+      "id": "background",
+      "label": "Background",
+      "type": "image",
+      "hint": "3840×2160 JPG · full screen",
+      "targets": [
+        {
+          "selector": "#background",
+          "mode": "src"
+        }
+      ]
+    },
+    {
+      "id": "logo",
+      "label": "Logo",
+      "type": "image",
+      "hint": "1120×400 PNG, transparent · shown 490×175",
+      "layoutSize": "1120 × 400 px",
+      "targets": [
+        {
+          "selector": "#logo",
+          "mode": "inject-img"
+        }
+      ]
+    },
+    {
+      "id": "videoPlayer",
+      "label": "Video",
+      "type": "layout",
+      "hint": "1920×1080 px, 16:9",
+      "layoutSize": "1920 × 1080 px, 16:9",
+      "targets": [
+        {
+          "selector": "#videoArea"
+        }
+      ]
+    },
+    {
+      "id": "video1",
+      "label": "Video 1 (mock image)",
+      "type": "image",
+      "hint": "1920×1080 still, 16:9 · stands in for the video · thumbnail 240×135",
+      "layoutLabel": "Thumbnail",
+      "layoutSize": "240 × 135 px, 16:9",
+      "targets": [
+        {
+          "selector": "#thumb1 img",
+          "mode": "src"
+        }
+      ]
+    },
+    {
+      "id": "video2",
+      "label": "Video 2 (mock image)",
+      "type": "image",
+      "hint": "1920×1080 still, 16:9 · thumbnail 240×135",
+      "layoutLabel": "Thumbnail",
+      "layoutSize": "240 × 135 px, 16:9",
+      "targets": [
+        {
+          "selector": "#thumb2 img",
+          "mode": "src"
+        }
+      ]
+    },
+    {
+      "id": "video3",
+      "label": "Video 3 (mock image)",
+      "type": "image",
+      "hint": "1920×1080 still, 16:9 · thumbnail 240×135",
+      "layoutLabel": "Thumbnail",
+      "layoutSize": "240 × 135 px, 16:9",
+      "targets": [
+        {
+          "selector": "#thumb3 img",
+          "mode": "src"
+        }
+      ]
+    },
+    {
+      "id": "qr",
+      "label": "QR code",
+      "type": "layout",
+      "hint": "Generated from the reward URL",
+      "targets": [
+        {
+          "selector": "#qrCard"
+        }
+      ]
+    },
+    {
+      "id": "question",
+      "label": "Question",
+      "type": "text",
+      "maxLength": 64,
+      "targets": [
+        {
+          "selector": "#question",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "answer1",
+      "label": "Answer 1 (correct)",
+      "type": "text",
+      "maxLength": 20,
+      "targets": [
+        {
+          "selector": "#answer1",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "answer2",
+      "label": "Answer 2",
+      "type": "text",
+      "maxLength": 20,
+      "targets": [
+        {
+          "selector": "#answer2",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "answer3",
+      "label": "Answer 3",
+      "type": "text",
+      "maxLength": 20,
+      "targets": [
+        {
+          "selector": "#answer3",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "answer4",
+      "label": "Answer 4",
+      "type": "text",
+      "maxLength": 20,
+      "targets": [
+        {
+          "selector": "#answer4",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "reward",
+      "label": "Reward text (correct answer)",
+      "type": "text",
+      "maxLength": 40,
+      "targets": [
+        {
+          "selector": "#rewardText",
+          "mode": "text"
+        }
+      ]
+    },
+    {
+      "id": "footer",
+      "label": "Footer text",
+      "type": "text",
+      "maxLength": 60,
+      "targets": [
+        {
+          "selector": "#footerText",
+          "mode": "text"
+        }
+      ]
+    }
+  ],
+  "options": [
+    {
+      "id": "videos",
+      "label": "Videos",
+      "param": "videos",
+      "values": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "default": 1
+    },
+    {
+      "id": "answers",
+      "label": "Answers",
+      "param": "answers",
+      "values": [
+        2,
+        3,
+        4
+      ],
+      "default": 4
+    },
+    {
+      "id": "state",
+      "label": "Screen",
+      "param": "state",
+      "values": [
+        "question",
+        "correct",
+        "wrong"
+      ],
+      "default": "question"
+    }
+  ],
+  "layoutKeep": [
+    ".answer.is-focused",
+    "#tryAgainBtn"
+  ]
 }

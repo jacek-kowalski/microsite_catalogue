@@ -151,6 +151,13 @@ async function run() {
                     check(await evalJs(inFrame(`!!d.querySelector('.edition-tile.is-focused:not(#editionStandard)')`)), 'remote ▶ moves focus inside the microsite');
                 }
                 if (id === 'click-to-email') {
+                    // 3-video variant: video focused first, ▼▼ reaches the CTA, then the normal send flow.
+                    await evalJs(`[...document.querySelectorAll('#option-groups .pill')].find(p => p.textContent === '3').click()`);
+                    await sleep(2500);
+                    check(await evalJs(inFrame(`d.getElementById('stage').classList.contains('layout-multi') && d.querySelectorAll('.thumb').length === 3 && d.getElementById('videoArea').classList.contains('is-focused')`)),
+                        'click-to-email: videos=3 shows video + 3 thumbnails, video focused first');
+                    for (const k of ['down', 'down']) { await evalJs(`document.querySelector('#remote [data-key="${k}"]').click()`); await sleep(250); }
+                    check(await evalJs(inFrame(`d.getElementById('sendToEmailBtn').classList.contains('is-focused')`)), 'click-to-email: ▼▼ moves focus to Send to Email');
                     check(await evalJs(inFrame(`getComputedStyle(d.getElementById('ctaGroup')).display !== 'none'`)), 'host mock answers SSO → CTA visible (step 1)');
                     await evalJs(`document.querySelector('#remote [data-key="ok"]').click()`); await sleep(500);
                     await evalJs(`document.querySelector('#remote [data-key="ok"]').click()`); await sleep(2000);

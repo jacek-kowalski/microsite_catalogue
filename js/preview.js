@@ -7,11 +7,11 @@
 // (e.g. postMessage replies the TV ad player would send) declare
 // "host": "<name>" and get js/hosts/<name>.js attached to the iframe.
 
-import { loadTemplate } from './data.js?v=4';
-import { renderChrome, icons, esc, h } from './ui.js?v=4';
-import { applyOverrides, applyOne, readText, slotPresent, slotRects } from './slots.js?v=4';
-import { renderRemote, flashKey } from './remote.js?v=4';
-import { applyLayout } from './layout.js?v=4';
+import { loadTemplate } from './data.js?v=8';
+import { renderChrome, icons, esc, h } from './ui.js?v=8';
+import { applyOverrides, applyOne, readText, slotPresent, slotRects } from './slots.js?v=8';
+import { renderRemote, flashKey } from './remote.js?v=8';
+import { applyLayout } from './layout.js?v=8';
 
 renderChrome();
 
@@ -62,6 +62,8 @@ function loadExample(exampleId) {
     document.querySelectorAll('#example-pills .pill').forEach(p => p.setAttribute('aria-pressed', String(p.dataset.id === exampleId)));
     if (state.detachHost) { state.detachHost(); state.detachHost = null; }
     if (state.host) { state.detachHost = state.host.attach(frame); }
+    // Layout view: keep the frame hidden until the grey layout is applied.
+    frame.classList.toggle('is-preparing', inLayout());
     frame.src = exampleUrl(ex);
 }
 
@@ -102,7 +104,11 @@ frame.addEventListener('load', () => {
     if (!d) { return; }
     syncTextDefaults();
     if (inLayout()) {
-        applyLayout(d, state.template.slots, realExampleId());
+        const relayout = () => applyLayout(d, state.template.slots, realExampleId(), state.template.layoutKeep || []);
+        relayout();
+        // microsites that build their DOM after load (or wait for a host reply) get more passes
+        setTimeout(relayout, 600);
+        setTimeout(() => { relayout(); frame.classList.remove('is-preparing'); refreshOverlay(); }, 1200);
     } else {
         applyOverrides(d, state.template.slots, effectiveOverrides(), realExampleId());
     }
@@ -396,7 +402,7 @@ async function init() {
     renderRemote(remoteEl, () => frame);
     if (t.host) {
         try {
-            state.host = await import(`./hosts/${t.host}.js?v=4`);
+            state.host = await import(`./hosts/${t.host}.js?v=8`);
         } catch (err) {
             console.error('[preview] host module failed to load', t.host, err);
         }

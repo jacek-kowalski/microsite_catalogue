@@ -5,6 +5,8 @@
 //
 // The background/full-screen slot is recognised by id "background"; it turns
 // the whole stage grey and puts its label in the top-left corner.
+// Elements matching the manifest's "layoutKeep" selectors (e.g. a fixed CTA
+// button) keep their real styling instead of fading into the grey.
 // Optional slot.layoutLabel / slot.layoutSize override the label and size
 // shown here (e.g. "Thumbnail" instead of the upload field's name).
 // Slots of type "layout" exist only for this view (e.g. a generated QR code):
@@ -41,7 +43,7 @@ const CSS = `
     .${BOX_CLASS} b { font-weight: 700; }
     .${BOX_CLASS}.is-bg { background: transparent; box-shadow: none; color: #fff; align-items: flex-end; justify-content: flex-start; padding: 28px 0 0 88px; align-items: flex-start; text-align: left; z-index: 0; }
     /* non-slot copy and chrome fade back so the labelled slots read first */
-    #stage *, .microsite * { color: rgba(255,255,255,.35) !important; border-color: rgba(255,255,255,.2) !important; background-color: transparent !important; box-shadow: none !important; }
+    #stage *:not([data-catalogue-layout-keep]), .microsite *:not([data-catalogue-layout-keep]) { color: rgba(255,255,255,.35) !important; border-color: rgba(255,255,255,.2) !important; background-color: transparent !important; box-shadow: none !important; }
     [data-catalogue-layout-slot]:not(#x) { opacity: 1 !important; visibility: visible !important; }
     [data-catalogue-layout-text] { color: #e6e6e6 !important; -webkit-text-fill-color: #e6e6e6 !important; }
     /* boxes must beat the "#stage *" fade above: repeat an id-level selector */
@@ -87,8 +89,13 @@ function boxFor(doc, el, slot, isBg) {
     host.appendChild(box);
 }
 
-export function applyLayout(doc, slots, exampleId) {
+export function applyLayout(doc, slots, exampleId, keep = []) {
     if (!doc || !doc.head) { return; }
+    for (const sel of keep) {
+        for (const el of q(doc, sel)) {
+            [el, ...el.querySelectorAll('*')].forEach(n => n.setAttribute('data-catalogue-layout-keep', ''));
+        }
+    }
     if (!doc.getElementById(STYLE_ID)) {
         const style = doc.createElement('style');
         style.id = STYLE_ID;

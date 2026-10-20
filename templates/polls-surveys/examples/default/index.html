@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, height=1080, initial-scale=1">
+<title>Poll microsite</title>
+<style>
+    /* Polls & surveys microsite: background, logo, a question with 2-4
+       answers, a result state (correct → QR code to a reward, wrong → "Try
+       again"), a footer line and 0-3 videos. Based on the wireframes in
+       input/polls_and_surveys/variant{1,2}.svg; the video variants follow
+       the QR / click-to-email templates:
+         0 videos    poll panel on the left, nothing on the right
+         1 video     poll panel left, large video right (as in the Figma)
+         2-3 videos  video + thumbnails left, logo + poll panel right
+       Authored on a fixed 1920x1080 #stage scaled by scaleStage().
+
+       URL params (so the catalogue can drive it):
+         videos=0..3       number of videos (default 1)
+         answers=2..4      number of answers (default 4)
+         state=question|correct|wrong   screen to open on (default question)
+         target_url=<url>  QR destination on the correct answer */
+    @font-face { font-family: SamsungOne; src: url(../../../../assets/fonts/SamsungOne-400v11.woff2) format("woff2"); font-weight: 400; }
+    @font-face { font-family: SamsungOne; src: url(../../../../assets/fonts/SamsungOne-700v11.woff2) format("woff2"); font-weight: 700; }
+    @font-face { font-family: SamsungSharpSans; src: url(../../../../assets/fonts/SamsungSharpSans-500.woff2) format("woff2"); font-weight: 500; }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+        font-family: SamsungOne, Arial, Helvetica, sans-serif;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    #stage {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #646464;
+        color: #fff;
+        transform-origin: top left;
+    }
+
+    #background { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+    /* ===== Logo 1120x400, shown 490x175 ===== */
+    #logo {
+        position: absolute;
+        left: 120px;
+        top: 70px;
+        width: 490px;
+        height: 175px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font: 700 40px/1 SamsungSharpSans, SamsungOne, sans-serif;
+        letter-spacing: 6px;
+        color: #fff;
+    }
+    #logo img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+
+    /* ===== Poll panel (glass card) ===== */
+    #pollPanel {
+        position: absolute;
+        left: 78px;
+        top: 280px;
+        width: 554px;
+        box-sizing: border-box;
+        padding: 40px 40px 40px;
+        border-radius: 16px;
+        background: rgba(40, 40, 40, 0.82);
+        border: 2px solid rgba(130, 130, 130, 0.35);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+        text-align: center;
+    }
+    #question {
+        font: 500 38px/50px SamsungSharpSans, SamsungOne, sans-serif;
+        color: #fff;
+        margin-bottom: 8px;
+    }
+    .answer {
+        width: 354px;
+        height: 76px;
+        box-sizing: border-box;
+        border-radius: 14px;
+        background: rgba(63, 63, 63, 0.8);
+        border: 2px solid rgba(130, 130, 130, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font: 400 30px/1 SamsungOne, sans-serif;
+        color: #fff;
+        transition: transform 0.15s, background 0.15s;
+    }
+    .answer.is-focused {
+        width: 384px;
+        height: 84px;
+        background: #fff;
+        border-color: #fff;
+        color: #000;
+        font-weight: 700;
+        box-shadow: 0 7px 9px rgba(0, 0, 0, 0.6);
+    }
+
+    #pollQuestion { display: contents; }
+
+    /* result states */
+    .result { display: none; flex-direction: column; align-items: center; gap: 14px; }
+    #stage.state-correct #pollQuestion, #stage.state-wrong #pollQuestion { display: none; }
+    #stage.state-correct #resultCorrect, #stage.state-wrong #resultWrong { display: flex; }
+    .result-answer { font: 500 44px/56px SamsungSharpSans, SamsungOne, sans-serif; }
+    .result-verdict { font: 400 18px/22px SamsungOne, sans-serif; letter-spacing: 3px; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); }
+    #rewardText { font: 500 32px/44px SamsungSharpSans, SamsungOne, sans-serif; margin-top: 14px; }
+    #qrCard { width: 200px; height: 200px; border-radius: 16px; background: #fff; padding: 10px; box-sizing: border-box; }
+    #qrCode, #qrCode canvas { width: 100%; height: 100%; display: block; }
+    #resultLegal { font: 400 14px/20px SamsungOne, sans-serif; color: rgba(255, 255, 255, 0.45); max-width: 440px; margin-top: 8px; }
+    #tryAgainBtn {
+        margin-top: 20px;
+        width: 384px;
+        height: 84px;
+        border-radius: 14px;
+        background: #fff;
+        color: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font: 700 32px/1 SamsungOne, sans-serif;
+        box-shadow: 0 7px 9px rgba(0, 0, 0, 0.6);
+    }
+
+    #footerText {
+        position: absolute;
+        left: 88px;
+        top: 984px;
+        width: 760px;
+        font: 400 36px/48px SamsungOne, sans-serif;
+        color: #fff;
+    }
+
+    /* ===== Video + thumbnails ===== */
+    #videoArea {
+        position: absolute;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #dadada;
+        display: none;
+    }
+    #videoArea img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    #videoArea.is-focused { box-shadow: 0 0 0 6px #fff; }
+    #thumbRail { position: absolute; display: none; justify-content: center; gap: 32px; }
+    .thumb { position: relative; width: 240px; height: 135px; border-radius: 12px; overflow: hidden; background: #dadada; transition: transform .15s, box-shadow .15s; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb .now-playing { display: none; position: absolute; left: 10px; bottom: 10px; padding: 4px 10px; border-radius: 4px; background: rgba(0,0,0,.75); font-size: 16px; }
+    .thumb.is-playing .now-playing { display: block; }
+    .thumb.is-focused { box-shadow: 0 0 0 4px #fff; transform: scale(1.1); z-index: 2; }
+
+    /* 1 video: large video right (928x522 at 928,493 — from the Figma) */
+    #stage.layout-single #videoArea { display: block; left: 928px; top: 493px; width: 928px; height: 522px; }
+
+    /* 2-3 videos: video + thumbnails left, logo + poll right */
+    #stage.layout-multi #videoArea { display: block; left: 88px; top: 88px; width: 1008px; height: 567px; }
+    #stage.layout-multi #thumbRail { display: flex; left: 88px; top: 687px; width: 1008px; height: 135px; }
+    #stage.layout-multi #logo { left: auto; right: 120px; top: 60px; width: 420px; height: 150px; }
+    #stage.layout-multi #pollPanel { left: auto; right: 88px; top: 250px; }
+    #stage.layout-multi #footerText { top: 900px; width: 1008px; }
+
+    #backButton {
+        position: absolute;
+        right: 40px;
+        top: 40px;
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: rgba(63, 63, 63, 0.8);
+        border: 2px solid rgba(130, 130, 130, 0.4);
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    #backButton.is-focused { background: #fff; }
+    #backButton.is-focused path { stroke: #000; }
+    #stage.layout-multi #backButton { right: 40px; }
+
+    #toast {
+        position: absolute;
+        left: 50%;
+        top: 40px;
+        transform: translateX(-50%);
+        padding: 14px 28px;
+        border-radius: 28px;
+        background: rgba(0, 0, 0, 0.8);
+        font-size: 22px;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="stage">
+    <img id="background" src="assets/background.jpg" alt="">
+
+    <div id="logo">BRAND LOGO</div>
+
+    <div id="pollPanel">
+        <div id="pollQuestion">
+            <div id="question">What artistic style did Claude Monet pioneer?</div>
+            <div class="answer" id="answer1">Impressionism</div>
+            <div class="answer" id="answer2">Cubism</div>
+            <div class="answer" id="answer3">Romanticism</div>
+            <div class="answer" id="answer4">Surrealism</div>
+        </div>
+        <div class="result" id="resultCorrect">
+            <div class="result-answer" id="correctAnswerText"></div>
+            <div class="result-verdict" id="correctVerdict">Correct</div>
+            <div id="rewardText">Scan and get a discount!</div>
+            <div id="qrCard"><div id="qrCode"></div></div>
+            <div id="resultLegal">The contents of this ad and the QR code are not affiliated with Samsung, or in anyway reflect the views of Samsung. Please refer to the advertiser's website for more information.</div>
+        </div>
+        <div class="result" id="resultWrong">
+            <div class="result-answer" id="wrongAnswerText"></div>
+            <div class="result-verdict" id="wrongVerdict">Sorry, not really!</div>
+            <div id="tryAgainBtn">Try again</div>
+        </div>
+    </div>
+
+    <div id="footerText">Answer the question to win a reward!</div>
+
+    <div id="videoArea"><img id="videoPlayer" src="" alt=""></div>
+    <div id="thumbRail"></div>
+
+    <div id="backButton" aria-label="Back">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><path d="M12 8 6 14l6 6M6 14h15a9 9 0 0 1 0 18h-6" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <div id="toast"></div>
+</div>
+
+<script src="lib/qrcode.js"></script>
+<script>
+/**
+ * Samsung TV Microsite — Polls & surveys template.
+ * Target: Tizen (Chromium M130). Shared microsite contract: Tizen key codes,
+ * window.$SAMSUNG hooks, registerKey/close postMessages. Videos are
+ * represented by still images in the catalogue preview.
+ */
+(function () {
+    'use strict';
+
+    window.$SAMSUNG = window.$SAMSUNG || {};
+
+    var KeyCodes = {
+        ENTER: [13, 29443],
+        RETURN: [10009, 88],   // 88 = X key, desktop testing
+        EXIT: [10182, 45],
+        LEFT: [37],
+        RIGHT: [39],
+        UP: [38, 29460],
+        DOWN: [40, 29461]
+    };
+
+    var isTizen = /tizen/i.test(navigator.userAgent.toLowerCase());
+
+    // Index of the correct answer (0-based). A real campaign would set this
+    // in its config; any other answer shows the "Try again" result.
+    var CORRECT_INDEX = 0;
+    var VIDEOS = ['assets/video-1.jpg', 'assets/video-2.jpg', 'assets/video-3.jpg'];
+
+    var params = new URLSearchParams(window.location.search);
+    function intParam(name, def, min, max) {
+        var n = parseInt(params.get(name), 10);
+        if (isNaN(n)) { n = def; }
+        return Math.max(min, Math.min(max, n));
+    }
+    var videoCount = intParam('videos', 1, 0, 3);
+    var answerCount = intParam('answers', 4, 2, 4);
+    var targetUrl = params.get('target_url') || params.get('qr_url') || 'https://www.samsung.com';
+
+    function $(id) { return document.getElementById(id); }
+    var stage = $('stage');
+
+    stage.classList.add(videoCount === 0 ? 'layout-none' : videoCount === 1 ? 'layout-single' : 'layout-multi');
+
+    // Answers beyond the configured count are removed (not just hidden), so
+    // layout and focus only ever see the visible ones.
+    var answers = [];
+    for (var a = 1; a <= 4; a++) {
+        var el = $('answer' + a);
+        if (a <= answerCount) { answers.push(el); } else { el.parentNode.removeChild(el); }
+    }
+
+    var thumbs = [];
+    var playingIndex = 0;
+    for (var v = 0; v < videoCount && videoCount > 1; v++) {
+        var t = document.createElement('div');
+        t.className = 'thumb';
+        t.id = 'thumb' + (v + 1);
+        t.innerHTML = '<img src="' + VIDEOS[v] + '" alt=""><span class="now-playing">Now playing</span>';
+        $('thumbRail').appendChild(t);
+        thumbs.push(t);
+    }
+    // With a single video there is no rail; keep a hidden thumb so the
+    // player still mirrors a replaceable image (catalogue upload).
+    if (videoCount === 1) {
+        var only = document.createElement('div');
+        only.className = 'thumb';
+        only.id = 'thumb1';
+        only.innerHTML = '<img src="' + VIDEOS[0] + '" alt="">';
+        $('thumbRail').appendChild(only);
+        thumbs.push(only);
+    }
+
+    function thumbImg(i) {
+        var img = thumbs[i] && thumbs[i].querySelector('img');
+        return img ? img.getAttribute('src') : '';
+    }
+    function playVideo(i) {
+        if (!videoCount) { return; }
+        playingIndex = i;
+        $('videoPlayer').src = thumbImg(i);
+        for (var j = 0; j < thumbs.length; j++) { thumbs[j].classList.toggle('is-playing', j === i); }
+    }
+    if (window.MutationObserver && thumbs.length) {
+        new MutationObserver(function () {
+            var src = thumbImg(playingIndex);
+            if ($('videoPlayer').getAttribute('src') !== src) { $('videoPlayer').src = src; }
+        }).observe($('thumbRail'), { subtree: true, attributes: true, attributeFilter: ['src'] });
+    }
+
+    function renderQr() {
+        try {
+            var q = qrcode(0, 'M');
+            q.addData(targetUrl);
+            q.make();
+            var m = q.getModuleCount();
+            var s = 8;
+            var c = document.createElement('canvas');
+            c.width = m * s;
+            c.height = m * s;
+            var ctx = c.getContext('2d');
+            for (var y = 0; y < m; y++) {
+                for (var x = 0; x < m; x++) {
+                    ctx.fillStyle = q.isDark(y, x) ? '#000' : '#fff';
+                    ctx.fillRect(x * s, y * s, s, s);
+                }
+            }
+            $('qrCode').innerHTML = '';
+            $('qrCode').appendChild(c);
+        } catch (e) { /* leave the white card empty */ }
+    }
+
+    // ── State + focus ───────────────────────────────────────────────────
+    // state: 'question' | 'correct' | 'wrong'. Focus rows depend on the
+    // layout: the poll column (answers / try-again) and, with videos, the
+    // video row and thumbnails; LEFT/RIGHT crosses between them.
+    var state = 'question';
+    var zone = 'poll';       // 'poll' | 'video' | 'thumbs' | 'back'
+    var answerIndex = 0;
+    var thumbIndex = 0;
+
+    function setState(s) {
+        state = s;
+        stage.classList.remove('state-question', 'state-correct', 'state-wrong');
+        stage.classList.add('state-' + s);
+        if (s === 'question') { answerIndex = 0; }
+        zone = 'poll';
+        render();
+    }
+
+    function render() {
+        answers.forEach(function (el, i) {
+            el.classList.toggle('is-focused', state === 'question' && zone === 'poll' && i === answerIndex);
+        });
+        $('videoArea').classList.toggle('is-focused', zone === 'video');
+        thumbs.forEach(function (el, i) { el.classList.toggle('is-focused', zone === 'thumbs' && i === thumbIndex); });
+        $('backButton').classList.toggle('is-focused', zone === 'back');
+    }
+
+    // The poll sits on the left with 0-1 videos and on the right with 2-3.
+    var pollOnRight = videoCount > 1;
+
+    function move(dx, dy) {
+        if (zone === 'poll') {
+            if (dy && state === 'question') {
+                var next = answerIndex + dy;
+                if (next < 0) { zone = 'back'; }
+                else { answerIndex = Math.min(answers.length - 1, next); }
+            } else if (dy < 0) {
+                zone = 'back';
+            } else if (dx && videoCount && (pollOnRight ? dx < 0 : dx > 0)) {
+                zone = 'video';
+            }
+        } else if (zone === 'video') {
+            if (dy > 0 && thumbs.length > 1) { zone = 'thumbs'; thumbIndex = playingIndex; }
+            else if (dy < 0) { zone = 'back'; }
+            else if (dx && (pollOnRight ? dx > 0 : dx < 0)) { zone = 'poll'; }
+        } else if (zone === 'thumbs') {
+            if (dy < 0) { zone = 'video'; }
+            else if (dx) {
+                var n = thumbIndex + dx;
+                if (n >= thumbs.length && pollOnRight) { zone = 'poll'; }
+                else { thumbIndex = Math.max(0, Math.min(thumbs.length - 1, n)); }
+            }
+        } else if (zone === 'back') {
+            if (dy > 0) { zone = 'poll'; }
+        }
+        render();
+    }
+
+    function showToast(text) {
+        $('toast').textContent = text;
+        $('toast').classList.add('show');
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(function () { $('toast').classList.remove('show'); }, 2500);
+    }
+
+    function closeMicrosite(exitRoute) {
+        if (isTizen) {
+            setTimeout(function () { window.parent.postMessage('{"close":""}', '*'); }, 1000);
+        } else {
+            showToast('Closing microsite (' + exitRoute + ')');
+        }
+    }
+
+    function activate() {
+        if (zone === 'back') { closeMicrosite('pageExitButton'); return; }
+        if (zone === 'video') { showToast('▶ Play / pause'); return; }
+        if (zone === 'thumbs') { playVideo(thumbIndex); return; }
+        if (state === 'question') {
+            var picked = answers[answerIndex].textContent;
+            if (answerIndex === CORRECT_INDEX) {
+                $('correctAnswerText').textContent = picked;
+                setState('correct');
+            } else {
+                $('wrongAnswerText').textContent = picked;
+                setState('wrong');
+            }
+        } else if (state === 'wrong') {
+            setState('question');
+        }
+    }
+
+    function onKeyDown(event) {
+        var k = event.keyCode;
+        if (KeyCodes.EXIT.indexOf(k) >= 0) { closeMicrosite('remoteExitButton'); return; }
+        if (KeyCodes.RETURN.indexOf(k) >= 0) {
+            if (state !== 'question') { setState('question'); return; }
+            closeMicrosite('remoteReturnButton');
+            return;
+        }
+        if (KeyCodes.ENTER.indexOf(k) >= 0) { activate(); return; }
+        if (KeyCodes.LEFT.indexOf(k) >= 0) { move(-1, 0); }
+        else if (KeyCodes.RIGHT.indexOf(k) >= 0) { move(1, 0); }
+        else if (KeyCodes.UP.indexOf(k) >= 0) { move(0, -1); }
+        else if (KeyCodes.DOWN.indexOf(k) >= 0) { move(0, 1); }
+        else { return; }
+        if (event.preventDefault) { event.preventDefault(); }
+    }
+
+    var STAGE_W = 1920;
+    var STAGE_H = 1080;
+    function scaleStage() {
+        var scale = Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H);
+        stage.style.transform = 'scale(' + scale + ')';
+        stage.style.left = ((window.innerWidth - STAGE_W * scale) / 2) + 'px';
+        stage.style.top = ((window.innerHeight - STAGE_H * scale) / 2) + 'px';
+    }
+    window.addEventListener('resize', scaleStage);
+    scaleStage();
+
+    function onLoad() {
+        renderQr();
+        playVideo(0);
+        setState('question');
+        // ?state=correct|wrong opens a result screen directly (catalogue preview)
+        var startState = params.get('state');
+        if (startState === 'correct' || startState === 'wrong') { window.$SAMSUNG.showState(startState); }
+        if (isTizen) {
+            setTimeout(function () { window.parent.postMessage('{"registerKey":"Return"}', '*'); }, 2000);
+        }
+    }
+
+    window.$SAMSUNG.onLoad = onLoad;
+    window.$SAMSUNG.onKeyDown = onKeyDown;
+    window.$SAMSUNG.closeMicrosite = closeMicrosite;
+    // Lets the catalogue show a result state directly: 'question' | 'correct' | 'wrong'
+    window.$SAMSUNG.showState = function (s) {
+        if (s === 'correct') { $('correctAnswerText').textContent = answers[CORRECT_INDEX].textContent; }
+        if (s === 'wrong') { $('wrongAnswerText').textContent = answers[answers.length > 1 ? 1 : 0].textContent; }
+        setState(s);
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        onLoad();
+    } else {
+        document.addEventListener('DOMContentLoaded', onLoad);
+    }
+})();
+</script>
+</body>
+</html>

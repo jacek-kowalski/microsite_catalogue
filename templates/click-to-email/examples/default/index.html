@@ -107,6 +107,33 @@
 
     #sendToEmailBtn { width: 325px; }
 
+    /* ===== catalogue patch: video variants (input/click_to_email/{no_video,1_video,2-3_videos}.svg) =====
+       ?videos=0..3 (default 0). 1 video: CTA title bottom-left, button + email
+       to its right under the video. 2-3 videos: thumbnails under the video,
+       CTA block bottom-right. */
+    #videoArea, #thumbRail { display: none; }
+    #stage.has-video #videoArea {
+        display: block; position: absolute; left: 88px; top: 88px;
+        width: 1008px; height: 567px; border-radius: 16px; overflow: hidden; background: #dadada;
+    }
+    #videoArea img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    #videoArea.is-focused { box-shadow: 0 0 0 6px #fff; }
+    #stage.has-thumbs #thumbRail {
+        display: flex; position: absolute; left: 88px; top: 687px; width: 1008px; height: 135px;
+        justify-content: center; gap: 32px;
+    }
+    .thumb { position: relative; width: 240px; height: 135px; border-radius: 12px; overflow: hidden; background: #dadada; transition: transform .15s, box-shadow .15s; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb .now-playing { display: none; position: absolute; left: 10px; bottom: 10px; padding: 4px 10px; border-radius: 4px; background: rgba(0,0,0,.75); font: 400 16px/20px var(--font-body); }
+    .thumb.is-playing .now-playing { display: block; }
+    .thumb.is-focused { box-shadow: 0 0 0 4px #fff; transform: scale(1.1); z-index: 2; }
+    /* 1 video: title left, button + email right */
+    #stage.layout-single #ctaCard { left: 88px; top: 712px; width: 1008px; padding: 32px 0; flex-direction: row; align-items: flex-start; gap: 0; }
+    #stage.layout-single .cta-title { width: 400px; height: auto; justify-content: flex-start; text-align: left; }
+    #stage.layout-single .cta-group, #stage.layout-single .cta-hint { margin-left: auto; margin-right: 88px; }
+    /* 2-3 videos: CTA block bottom-right */
+    #stage.layout-multi #ctaCard { left: auto; right: 88px; top: 654px; }
+
     /* ===== Disclaimer ===== */
     #disclaimer {
         position: absolute; left: 64px; top: 1020px;
@@ -179,12 +206,16 @@
         <svg viewBox="1825 57 38 38" aria-hidden="true"><path d="M1838.56 63.6768L1834.49 67.5781H1848.46L1848.83 67.583C1852.02 67.6666 1854.87 68.8372 1857.31 71.0566C1859.57 73.1183 1860.82 75.3784 1860.97 77.8037L1861 77.8047L1860.99 78.9355L1861 80.0664H1860.97C1860.82 82.4922 1859.57 84.7525 1857.31 86.8145C1854.87 89.0339 1852.02 90.2044 1848.83 90.2881L1848.46 90.293H1829.48V86.585H1848.46C1850.87 86.585 1852.96 85.7624 1854.81 84.0752C1856.41 82.6132 1857.19 81.2076 1857.27 79.8262L1857.28 79.6289L1857.28 78.9355L1857.28 78.2422L1857.27 78.0449C1857.19 76.6636 1856.41 75.2588 1854.81 73.7969C1852.96 72.1094 1850.87 71.2861 1848.46 71.2861H1834.07L1838.56 75.623L1835.99 78.291L1827 69.6191L1835.99 61L1838.56 63.6768Z" fill="#fff"/></svg>
     </div>
 
+    <!-- catalogue patch: video area + thumbnails for the 1 / 2-3 video variants -->
+    <div id="videoArea"><img id="videoPlayer" src="" alt=""></div>
+    <div id="thumbRail"></div>
+
     <div id="ctaCard">
         <div class="cta-title">Special discount just for you!</div>
         <div class="cta-group is-hidden" id="ctaGroup">
             <div class="btn is-focused" id="sendToEmailBtn" role="button">
                 <div class="btn-bg"></div>
-                <div class="btn-label">Send Email</div><!-- catalogue patch: fixed CTA label, not an editable slot -->
+                <div class="btn-label">Send to Email</div><!-- catalogue patch: fixed CTA label, not an editable slot -->
             </div>
             <div class="cta-email" id="ctaEmail"></div>
         </div>
@@ -345,6 +376,7 @@
         showNotification(TEXT.FAILED_TITLE, TEXT.FAILED_BODY);
         step = 1;
         setBtnState($('sendToEmailBtn'), 'focused');
+        renderVideoFocus(); /* catalogue patch */
     }
 
     // The CTA appears only when the container confirms a signed-in Samsung Account and the URL
@@ -410,6 +442,7 @@
             $('popup').classList.remove('is-open');
             $('notification').classList.remove('is-open');
             setBtnState(cta, 'focused');
+            renderVideoFocus(); /* catalogue patch: the video row may own focus */
         } else if (n === 2) {
             // a retry after a failure: the old failure notification must not stay on screen
             $('notification').classList.remove('is-open');
@@ -438,8 +471,83 @@
         }
     }
 
+    // -- catalogue patch: video variants --------------------------------
+    // With videos, step 1 gets a small focus grid: video, thumbnails, CTA.
+    // Only the CTA row is handed to the original step-1 logic (OK opens the
+    // popup); steps 0/2/3 are unchanged.
+    var VIDEOS = ['assets/video-1.jpg', 'assets/video-2.jpg', 'assets/video-3.jpg'];
+    var videoCount = (function () {
+        var n = parseInt(new URLSearchParams(window.location.search).get('videos'), 10);
+        return isNaN(n) ? 0 : Math.max(0, Math.min(3, n));
+    })();
+    var thumbs = [];
+    var playingIndex = 0;
+    var vRows = [];          // focus rows used while step === 1 and videos exist
+    var vRow = 0;
+    var vCol = 0;
+
+    function setupVideos() {
+        var stageEl = document.getElementById('stage');
+        if (!videoCount) { return; }
+        stageEl.classList.add('has-video', videoCount === 1 ? 'layout-single' : 'layout-multi');
+        if (videoCount > 1) { stageEl.classList.add('has-thumbs'); }
+        for (var i = 0; i < videoCount; i++) {
+            var t = document.createElement('div');
+            t.className = 'thumb';
+            t.id = 'thumb' + (i + 1);
+            t.innerHTML = '<img src="' + VIDEOS[i] + '" alt=""><span class="now-playing">Now playing</span>';
+            $('thumbRail').appendChild(t);
+            thumbs.push(t);
+        }
+        vRows.push([$('videoArea')]);
+        if (videoCount > 1) { vRows.push(thumbs); }
+        vRows.push([$('sendToEmailBtn')]);
+        vRow = 0;
+        playVideo(0);
+        // the player mirrors the playing thumbnail, so a replaced thumbnail replaces the video
+        if (window.MutationObserver) {
+            new MutationObserver(function () {
+                var src = thumbImg(playingIndex);
+                if ($('videoPlayer').getAttribute('src') !== src) { $('videoPlayer').src = src; }
+            }).observe($('thumbRail'), { subtree: true, attributes: true, attributeFilter: ['src'] });
+        }
+    }
+    function thumbImg(i) {
+        var img = thumbs[i] && thumbs[i].querySelector('img');
+        return img ? img.getAttribute('src') : '';
+    }
+    function playVideo(i) {
+        playingIndex = i;
+        $('videoPlayer').src = thumbImg(i);
+        for (var j = 0; j < thumbs.length; j++) { thumbs[j].classList.toggle('is-playing', j === i); }
+    }
+    function onCtaRow() { return !vRows.length || vRow === vRows.length - 1; }
+    function renderVideoFocus() {
+        if (!vRows.length) { return; }
+        for (var r = 0; r < vRows.length; r++) {
+            for (var c = 0; c < vRows[r].length; c++) {
+                if (vRows[r][c].id === 'sendToEmailBtn') { continue; }
+                vRows[r][c].classList.toggle('is-focused', step === 1 && r === vRow && c === vCol);
+            }
+        }
+        // the CTA uses the microsite's own button states: white when focused, glass otherwise
+        if (step === 1) { setBtnState($('sendToEmailBtn'), onCtaRow() ? 'focused' : 'normal'); }
+    }
+    // returns true when the key was consumed by the video grid
+    function videoKey(k) {
+        if (step !== 1 || !vRows.length) { return false; }
+        if (has(KeyCodes.UP, k)) { vRow = Math.max(0, vRow - 1); vCol = vRows[vRow] === thumbs ? playingIndex : 0; renderVideoFocus(); return true; }
+        if (has(KeyCodes.DOWN, k)) { vRow = Math.min(vRows.length - 1, vRow + 1); vCol = vRows[vRow] === thumbs ? playingIndex : 0; renderVideoFocus(); return true; }
+        if (onCtaRow()) { return false; }
+        if (has(KeyCodes.LEFT, k)) { vCol = Math.max(0, vCol - 1); renderVideoFocus(); return true; }
+        if (has(KeyCodes.RIGHT, k)) { vCol = Math.min(vRows[vRow].length - 1, vCol + 1); renderVideoFocus(); return true; }
+        if (has(KeyCodes.ENTER, k)) { if (vRows[vRow] === thumbs) { playVideo(vCol); } return true; }
+        return true;
+    }
+
     function onKeyDown(event) {
         var k = event.keyCode;
+        if (videoKey(k)) { return; }
 
         if (has(KeyCodes.EXIT, k)) { closeMicrosite('remoteExitButton'); return; }
         if (has(KeyCodes.RETURN, k)) {
@@ -465,6 +573,7 @@
         logEvent('Microsite loading. Platform: ' + (isTizen ? 'Tizen' : 'Browser'));
 
         popupButtons = [$('popupSendBtn'), $('popupCancelBtn')];
+        setupVideos(); /* catalogue patch */
 
         // Pointer support (desktop testing / pointer remotes)
         $('sendToEmailBtn').addEventListener('click', function () { if (step === 1) { goToStep(2); } });

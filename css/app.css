@@ -348,4 +348,9 @@ img { display: block; }
 .option-group .pill-sm { min-width: 36px; justify-content: center; padding: 4px 10px; }
 
 /* Catalogue card: live microsite rendered as grey layout, scaled down. */
-.card-media iframe.card-layout { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; background: #646464; }
+.card-media iframe.card-layout { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; background: #646464; opacity: 0; transition: opacity .25s; }
+.card-media iframe.card-layout.is-ready { opacity: 1; }
+.card-media:has(iframe.card-layout) { background: #646464; }
+/* Preview iframe: hidden while a Layout view is being prepared (no asset flash) */
+.tv-screen iframe.is-preparing { visibility: hidden; }
+.tv-screen:has(iframe.is-preparing) { background: #646464; }
